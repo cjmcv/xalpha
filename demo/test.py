@@ -139,7 +139,7 @@ def func_2():
     """持仓基金涨跌幅统计"""
     try:
         fund_categories = get_fund_categories()
-        intervals = [("40日", 40), ("20日", 20), ("10日", 10), ("5日", 5), ("3日", 3)]
+        intervals = [("40日", 40), ("20日", 20), ("10日", 10), ("5日", 5), ("4日", 4), ("3日", 3), ("2日", 2)]  # 添加4日和2日
         table_data = []
         
         for cat_name, funds in fund_categories.items():
@@ -185,8 +185,8 @@ def func_2():
             return "❌ 无法获取任何基金数据"
         
         result = "📊 **持仓分类基金近期涨跌幅统计**\n\n"
-        result += "| 分类 | 基金代码 | 基金简称 | 40日涨跌 | 20日涨跌 | 10日涨跌 | 5日涨跌 | 3日涨跌 | 1日涨跌(日期) | 距一年高点跌幅 |\n"
-        result += "|------|----------|----------|----------|----------|----------|---------|---------|----------------|----------------|\n"
+        result += "| 分类 | 基金代码 | 基金简称 | 40日 | 20日 | 10日 | 5日 | 4日 | 3日 | 2日 | 1日 | 距一年高点 |\n"  # 添加4日和2日列
+        result += "|------|-------|-------|-------|-------|-------|------|------|------|------|-------------|----------------|\n"
         
         for item in table_data:
             changes_str = [format_percentage(c, color_mode=True) for c in item["changes"]]
@@ -200,9 +200,10 @@ def func_2():
         return result
     except Exception as e:
         return f"❌ 获取基金数据失败: {str(e)}"
-
+    
+# todo: 股债性价比。检索财报摘要汇总。结合daily输出用于询问大模型的prompt。
 def func_3(fund_code=None):
-    """指定基金净值变化 - 添加估值链接"""
+    """指定基金净值变化 - 添加雪球基金估值链接"""
     try:
         if fund_code is None:
             fund_code = "020989"
@@ -225,22 +226,22 @@ def func_3(fund_code=None):
         if not target_fund:
             return f"❌ 未找到基金代码: {fund_code}"
         
-        # 获取对应ETF代码用于跳转
-        etf_mapping = {
-            "纳斯达克100": "513300",
-            "标普500": "513500",
-            "恒生科技": "513180",
-            "中证A500": "159352",
-            "主要消费红利": "159928",
-            "港股通信息技术": "513320",
-            "黄金": "518880",
+        # 雪球基金代码映射
+        dj_index_code_map = {
+            "恒生科技": "HKHSTECH",
+            "主要消费红利": "CSIH30094",
+            "纳斯达克100": "NDX",
+            "标普500": "SP500",
         }
-        
-        etf_code = etf_mapping.get(target_category, "")
-        
+        # etf.run代码映射，只有A股
+        etfrun_index_code_map = {
+            "中证A500": "SSE/000510",
+            "主要消费红利": "CSI/h30094",
+        }
         df = get_fund_data(fund_code)
-        intervals = [160, 80, 40, 20, 10, 5, 3, 1]
-        interval_names = ["160日前", "80日前", "40日前", "20日前", "10日前", "5日前", "3日前", "最新"]
+        # 时间点定义
+        intervals = [160, 80, 40, 20, 10, 5, 4, 3, 2, 1]
+        interval_names = ["160日前", "80日前", "40日前", "20日前", "10日前", "5日前", "4日前", "3日前", "2日前", "最新"]
         
         # 构建净值数据
         data_rows = []
@@ -269,29 +270,30 @@ def func_3(fund_code=None):
             result += f" {format_percentage(change, color_mode=True)} |"
         result += " - |\n"
         
-        # ========== 估值链接 ==========
+        # ========== 雪球基金估值链接 ==========
         result += "\n---\n\n### 📊 估值查询\n\n"
         
-        if etf_code:
-            # etf.run 链接
-            etf_run_url = f"https://etf.run/etf/{etf_code}"
+        # 优先使用指数代码（更精确的估值数据）
+        if target_category in dj_index_code_map:
+            index_code = dj_index_code_map[target_category]
+            valuation_url = f"https://danjuanfunds.com/dj-valuation-table-detail/{index_code}"
             result += f"**查看估值详情**\n\n"
-            result += f"🔗 [点击查看 {target_category} ETF估值]({etf_run_url})\n\n"
-            result += f"ETF代码: {etf_code}\n\n"
-        else:
-            # 东方财富搜索链接
-            search_url = f"https://quote.eastmoney.com/search.html?keyword={target_category}"
-            result += f"🔗 [点击搜索 {target_category} 估值]({search_url})\n\n"
+            result += f"🔗 [点击查看 {target_category} 指数估值（雪球基金）]({valuation_url})\n\n"
+            result += f"指数代码: {index_code}（雪球基金）\n\n"
         
-        result += "**网站说明:**\n"
-        result += "- etf.run: 提供ETF估值、PE/PB分位等数据\n"
-        result += "- 东方财富: 提供指数估值、历史分位等信息\n\n"
-        result += "💡 点击链接即可查看该指数的实时估值数据\n"
+        if target_category in etfrun_index_code_map:
+            index_code = etfrun_index_code_map[target_category]
+            valuation_url = f"https://www.etf.run/index/{index_code}"
+            result += f"**查看估值详情**\n\n"
+            result += f"🔗 [点击查看 {target_category} 指数估值（etf.run）]({valuation_url})\n\n"
+            result += f"指数代码: {index_code}（etf.run）\n\n"
+        
+        result += "**其他PE/PB数据:**\n"
+        result += "- 且慢: https://qieman.com/idx-eval\n"
         
         return result
     except Exception as e:
         return f"❌ 查询失败: {str(e)}"
-    
     
 def func_4():
     result = f"💻 **系统信息**\n\n当前时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\nPython版本: {sys.version.split()[0]}\n操作系统: {os.name}\n当前目录: {os.getcwd()}\n"
@@ -326,7 +328,7 @@ def func_6():
 FUNCTIONS_MAP = {
     "1": {"func": func_1, "desc": "持仓组合摘要", "emoji": "📊", "has_param": False},
     "2": {"func": func_2, "desc": "基金涨跌统计", "emoji": "📈", "has_param": False},
-    "3": {"func": func_3, "desc": "指定基金净值", "emoji": "🎲", "has_param": True, "param_desc": "基金代码"},
+    "3": {"func": func_3, "desc": "查阅基金(如020989)", "emoji": "🎲", "has_param": True, "param_desc": "基金代码"},
     "4": {"func": func_4, "desc": "系统信息", "emoji": "💻", "has_param": False},
     "5": {"func": func_5, "desc": "网络信息", "emoji": "🌐", "has_param": False},
     "6": {"func": func_6, "desc": "数据示例", "emoji": "📋", "has_param": False},
@@ -338,31 +340,59 @@ def build_charts(selected_types):
     html_parts = [chart_to_html(charts_map[t]()) for t in selected_types if t in charts_map]
     return "".join(html_parts) if html_parts else '<div style="height:550px;display:flex;align-items:center;justify-content:center;">请勾选图表</div>'
 
-
 # 创建界面
 with gr.Blocks(title="基金数据看板", theme=gr.themes.Soft()) as demo:
     gr.HTML(f'<div style="text-align:center; padding:20px; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius:10px;">'
             f'<h1 style="color:white;">📊 基金数据看板</h1><p style="color:white;">{get_network_info()} | 本地: http://localhost:7860</p></div>')
     
+    # 第一行：左边控制面板+数字命令，右边图表
     with gr.Row():
+        # 左侧：控制面板 + 数字命令
         with gr.Column(scale=1):
-            gr.Markdown("### 🎮 控制面板")
-            chart_types = gr.CheckboxGroup(choices=["持仓分布", "柱状图", "折线图"], label="图表类型（可多选）", value=["持仓分布"])
-            gr.Button("🎨 生成图表", variant="primary").click(fn=build_charts, inputs=chart_types, outputs=gr.HTML(label="图表"))
+            # 图表类型选择
+            gr.Markdown("**图表类型**")
+            chart_1 = gr.Checkbox(label="持仓分布", value=True)
+            chart_2 = gr.Checkbox(label="柱状图", value=False)
+            chart_3 = gr.Checkbox(label="折线图", value=False)
             
-            gr.Markdown("### 💬 数字命令")
-            chat_input = gr.Textbox(label="输入数字", placeholder=f"输入 1-6 或 3 020989", lines=2)
-            chat_send, clear_btn = gr.Button("📨 发送"), gr.Button("🗑️ 清除")
+            def combine_charts(c1, c2, c3):
+                selected = []
+                if c1: selected.append("持仓分布")
+                if c2: selected.append("柱状图")
+                if c3: selected.append("折线图")
+                return selected
+            
+            generate_btn = gr.Button("🎨 生成图表", variant="primary")
+            
+            gr.Markdown("---")
+            chat_input = gr.Textbox(label="💬 数字命令", placeholder=f"输入 1-6 或 基金编号 020989", lines=2)
+            
+            with gr.Row():
+                chat_send = gr.Button("📨 发送", variant="primary", scale=1)
+                clear_btn = gr.Button("🗑️ 清除", scale=1)
             
             function_list = "\n".join([
-                f"- **{num}** {info['emoji']} {info['desc']}" + (f" (输入: {num} 基金代码)" if info.get("has_param", False) else "")
+                f"- **{num}** {info['emoji']} {info['desc']}"
                 for num, info in FUNCTIONS_MAP.items()
             ])
-            gr.Markdown("---\n### 📋 功能对照表\n" + function_list + "\n\n**使用示例:**\n- 输入 `3 020989` 查询指定基金\n- 直接输入 `020989` 快速查询基金\n---")
+            gr.Markdown(function_list + "\n---")
         
-        with gr.Column(scale=3):
-            chart_output, chatbot = gr.HTML(label="图表"), gr.Chatbot(label="执行结果", height=400)
+        # 右侧：图表
+        with gr.Column(scale=2):
+            chart_output = gr.HTML(label="图表")
+    
+    # 第二行：执行结果框（横跨整行）
+    with gr.Row():
+        with gr.Column(scale=1):
+            chatbot = gr.Chatbot(label="执行结果", height=600)
             chat_history = gr.State([])
+    
+    # 绑定按钮事件 - 合并checkbox的值
+    generate_btn.click(
+        fn=lambda a,b,c: build_charts(combine_charts(a,b,c)), 
+        inputs=[chart_1, chart_2, chart_3], 
+        outputs=chart_output
+    )
     
     def send_message(msg, history):
         if not msg or not msg.strip():
@@ -395,8 +425,10 @@ with gr.Blocks(title="基金数据看板", theme=gr.themes.Soft()) as demo:
     chat_send.click(send_message, [chat_input, chat_history], [chatbot, chat_input, chat_history])
     chat_input.submit(send_message, [chat_input, chat_history], [chatbot, chat_input, chat_history])
     clear_btn.click(lambda: ([], ""), None, [chatbot, chat_input])
+    
+    # 初始加载
     demo.load(fn=lambda: build_charts(["持仓分布"]), outputs=chart_output)
-
-
+    
+    
 if __name__ == "__main__":
     demo.launch(server_name="0.0.0.0", server_port=7860, debug=True)
