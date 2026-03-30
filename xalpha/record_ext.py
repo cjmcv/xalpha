@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-扩展 record 模块以支持持仓CSV格式 —— 已修复基金代码6位补0问题
+扩展 record 模块以支持招行持仓CSV格式
 """
 
 from pyecharts.charts import Bar, Line, Pie
@@ -87,7 +87,21 @@ class mulfix_pos:
         self.pos = status
         self.cash = int(round(status.account_total, 0)) if status.account_total > 0 else 0
         self.df = self._make_summary()
-
+        # ===================== 分类和目标占比配置（统一管理） =====================
+        self.category_config = {
+            "纳斯达克100": {"keywords": ["纳斯达克100"], "target_ratio": 10},
+            "标普500": {"keywords": ["标普500"], "target_ratio": 0},
+            "全球主动": {"keywords": ["全球"], "target_ratio": 15},
+            "恒生科技": {"keywords": ["恒生科技"], "target_ratio": 5},
+            "港股通信息技术": {"keywords": ["港股通"], "target_ratio": 5},
+            "中证A500": {"keywords": ["A500"], "target_ratio": 0},
+            "主要消费红利": {"keywords": ["消费红利"], "target_ratio": 5},
+            "黄金": {"keywords": ["黄金", "上海金"], "target_ratio": 0},
+            "二级债基": {"keywords": ["债券", "瑞锦混合"], "target_ratio": 50},
+            "其他": {"keywords": [], "target_ratio": 0},
+            "现金": {"keywords": [], "target_ratio": 10},  # 现金的目标占比
+        }
+        
     def _make_summary(self):
         pos = self.pos.positions.copy()
         data = []
@@ -134,68 +148,94 @@ class mulfix_pos:
         df = self.df.copy()
         fund_total = int(round(self.total_market_value if not np.isnan(self.total_market_value) else 0, 0))
         cash = self.cash
-
+        grand_total = cash + fund_total
+        
         # ===================== 归类规则 =====================
         def classify(name):
-            if "纳斯达克100" in name:
-                return "纳斯达克100"
-            elif "标普500" in name:
-                return "标普500"
-            elif "恒生科技" in name:
-                return "恒生科技"
-            elif "港股通" in name:
-                return "港股通信息技术"
-            elif "A500" in name:
-                return "中证A500"
-            elif "消费红利" in name:
-                return "主要消费红利"
-            elif "黄金" in name or "上海金" in name:
-                return "黄金"
-            elif "债券" in name or "瑞锦混合" in name:
-                return "债券"
-            else:
-                return "其他"
+            for category, config in self.category_config.items():
+                for keyword in config["keywords"]:
+                    if keyword in name:
+                        return category
+            return "其他"
 
+        # 生成分类
         df["分类"] = df["简称"].apply(classify)
+        # 根据配置获取目标占比
+        df["目标占比"] = df["分类"].apply(lambda x: self.category_config.get(x, {}).get("target_ratio", 0))
 
-        # ===================== 外层：所有分类 + 现金 =====================
-        outer_df = df.groupby("分类")["参考市值"].sum().reset_index()
-        outer_data = [(row["分类"], int(round(row["参考市值"], 0))) for _, row in outer_df.iterrows()]
+        # 汇总
+        outer_df = df.groupby("分类").agg({
+            "参考市值": "sum",
+            "目标占比": "first"
+        }).reset_index()
+
+        # 加入现金
         if cash > 0:
-            outer_data.append(("现金", cash))
+            outer_df.loc[len(outer_df)] = {"分类": "现金", "参考市值": cash, "目标占比": self.category_config["现金"]["target_ratio"]}
 
-        # ===================== 内层：只显示债券明细 =====================
-        bond_df = df[df["分类"] == "债券"].copy()
-        inner_data = [(row["简称"], int(round(row["参考市值"], 0))) for _, row in bond_df.iterrows()]
+        total_value = outer_df["参考市值"].sum()
+        
+        # 预先格式化外层标签
+        outer_data_with_label = []
+        outer_name_map = {}
+        for _, row in outer_df.iterrows():
+            short_name = row["分类"]
+            value = int(round(row["参考市值"]))
+            percent = (value / total_value * 100) if total_value > 0 else 0
+            target = row["目标占比"]
+            label = f"{short_name}: {percent:.1f}% ({target}%)"
+            outer_data_with_label.append((label, value))
+            outer_name_map[label] = short_name
+
+        # 内层债券
+        bond_df = df[df["分类"] == "二级债基"].copy()
+        inner_data_with_label = []
+        inner_name_map = {}
+        for _, row in bond_df.iterrows():
+            short_name = row["简称"]
+            value = int(round(row["参考市值"]))
+            percent = (value / total_value * 100) if total_value > 0 else 0
+            label = f"{short_name}: {percent:.1f}%"
+            inner_data_with_label.append((label, value))
+            inner_name_map[label] = short_name
 
         # ===================== 绘图 =====================
         c = (
             Pie()
             .add(
                 series_name="债券明细",
-                data_pair=inner_data,
+                data_pair=inner_data_with_label,
                 radius=["0%", "35%"],
-                label_opts=opts.LabelOpts(formatter="{b}: {d}%"),
+                label_opts=opts.LabelOpts(
+                    position="inside",
+                    formatter="{b}"
+                ),
             )
             .add(
                 series_name="持仓分类",
-                data_pair=outer_data,
+                data_pair=outer_data_with_label,
                 radius=["40%", "75%"],
-                label_opts=opts.LabelOpts(formatter="{b}: {c}元 ({d}%)"),
+                label_opts=opts.LabelOpts(
+                    position="outside",
+                    formatter="{b}"
+                ),
             )
             .set_global_opts(
                 title_opts=opts.TitleOpts(
-                    title=f"持仓总额({fund_total}) + 现金({cash}) = {cash + fund_total}",
+                    title=f"持仓总额({fund_total}) + 现金({cash}) = {grand_total}",
                     pos_left="center"
                 ),
                 legend_opts=opts.LegendOpts(orient="vertical", pos_left="left"),
             )
+            .set_series_opts(
+                tooltip_opts=opts.TooltipOpts(
+                    trigger="item",
+                    formatter=lambda params: f"{outer_name_map.get(params.name, params.name.split(':')[0])}: {params.value}元"
+                )
+            )
         )
 
-        if rendered:
-            return c.render_notebook()
-        return c
-
+        return c.render_notebook() if rendered else c
 
 # 便捷函数
 def from_positions(path, **readkwds):

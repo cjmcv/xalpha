@@ -201,16 +201,14 @@ def func_2():
     except Exception as e:
         return f"❌ 获取基金数据失败: {str(e)}"
 
+
 def func_3(fund_code=None):
-    """指定基金净值变化 - 添加估值链接"""
+    """指定基金净值变化"""
     try:
         if fund_code is None:
             fund_code = "020989"
         
-        # 获取分类数据
         fund_categories = get_fund_categories()
-        
-        # 查找目标基金
         target_fund = None
         target_category = None
         for cat_name, funds in fund_categories.items():
@@ -225,24 +223,10 @@ def func_3(fund_code=None):
         if not target_fund:
             return f"❌ 未找到基金代码: {fund_code}"
         
-        # 获取对应ETF代码用于跳转
-        etf_mapping = {
-            "纳斯达克100": "513300",
-            "标普500": "513500",
-            "恒生科技": "513180",
-            "中证A500": "159352",
-            "主要消费红利": "159928",
-            "港股通信息技术": "513320",
-            "黄金": "518880",
-        }
-        
-        etf_code = etf_mapping.get(target_category, "")
-        
         df = get_fund_data(fund_code)
-        intervals = [160, 80, 40, 20, 10, 5, 3, 1]
-        interval_names = ["160日前", "80日前", "40日前", "20日前", "10日前", "5日前", "3日前", "最新"]
+        intervals = [40, 20, 10, 5, 3, 1]
+        interval_names = ["40日前", "20日前", "10日前", "5日前", "3日前", "最新"]
         
-        # 构建净值数据
         data_rows = []
         for days, name in zip(intervals, interval_names):
             if len(df) >= days:
@@ -250,49 +234,25 @@ def func_3(fund_code=None):
                 date = df.iloc[days-1]['净值日期'].strftime('%m-%d')
                 data_rows.append({"时间点": name, "日期": date, "净值": nav})
         
-        # 生成净值表格
         result = f"📈 **基金净值变化 - {target_fund['name']} ({target_fund['code']})**\n\n"
-        result += f"分类: {target_category}\n"
-        result += f"数据截止: {df.iloc[0]['净值日期'].strftime('%Y-%m-%d')}\n\n"
+        result += f"分类: {target_category}\n数据截止: {df.iloc[0]['净值日期'].strftime('%Y-%m-%d')}\n\n"
         
-        # 构建表头
-        result += "| 指标 |" + "".join([f" {r['时间点']} |" for r in data_rows]) + "\n"
-        result += "|------|" + "".join(["------|" for _ in data_rows]) + "\n"
+        result += "| 时间点 |" + "".join([f" {r['时间点']} |" for r in data_rows]) + "\n"
+        result += "|--------|" + "".join(["------|" for _ in data_rows]) + "\n"
         result += "| 日期 |" + "".join([f" {r['日期']} |" for r in data_rows]) + "\n"
         result += "| 净值 |" + "".join([f" {r['净值']:.4f} |" for r in data_rows]) + "\n"
         
-        # 涨跌幅行
         latest_nav = data_rows[-1]['净值']
         result += "| 涨跌幅 |"
         for row in data_rows[:-1]:
             change = (latest_nav - row['净值']) / row['净值'] * 100
             result += f" {format_percentage(change, color_mode=True)} |"
-        result += " - |\n"
-        
-        # ========== 估值链接 ==========
-        result += "\n---\n\n### 📊 估值查询\n\n"
-        
-        if etf_code:
-            # etf.run 链接
-            etf_run_url = f"https://etf.run/etf/{etf_code}"
-            result += f"**查看估值详情**\n\n"
-            result += f"🔗 [点击查看 {target_category} ETF估值]({etf_run_url})\n\n"
-            result += f"ETF代码: {etf_code}\n\n"
-        else:
-            # 东方财富搜索链接
-            search_url = f"https://quote.eastmoney.com/search.html?keyword={target_category}"
-            result += f"🔗 [点击搜索 {target_category} 估值]({search_url})\n\n"
-        
-        result += "**网站说明:**\n"
-        result += "- etf.run: 提供ETF估值、PE/PB分位等数据\n"
-        result += "- 东方财富: 提供指数估值、历史分位等信息\n\n"
-        result += "💡 点击链接即可查看该指数的实时估值数据\n"
-        
+        result += " - |"
         return result
     except Exception as e:
         return f"❌ 查询失败: {str(e)}"
-    
-    
+
+
 def func_4():
     result = f"💻 **系统信息**\n\n当前时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\nPython版本: {sys.version.split()[0]}\n操作系统: {os.name}\n当前目录: {os.getcwd()}\n"
     try:
@@ -325,8 +285,8 @@ def func_6():
 # 功能映射
 FUNCTIONS_MAP = {
     "1": {"func": func_1, "desc": "持仓组合摘要", "emoji": "📊", "has_param": False},
-    "2": {"func": func_2, "desc": "基金涨跌统计", "emoji": "📈", "has_param": False},
-    "3": {"func": func_3, "desc": "指定基金净值", "emoji": "🎲", "has_param": True, "param_desc": "基金代码"},
+    "2": {"func": func_2, "desc": "基金涨跌统计", "emoji": "🎲", "has_param": False},
+    "3": {"func": func_3, "desc": "指定基金净值", "emoji": "📈", "has_param": True, "param_desc": "基金代码"},
     "4": {"func": func_4, "desc": "系统信息", "emoji": "💻", "has_param": False},
     "5": {"func": func_5, "desc": "网络信息", "emoji": "🌐", "has_param": False},
     "6": {"func": func_6, "desc": "数据示例", "emoji": "📋", "has_param": False},

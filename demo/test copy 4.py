@@ -136,7 +136,52 @@ def func_1():
 
 
 def func_2():
-    """持仓基金涨跌幅统计"""
+    target_fund_code = "020989"
+    try:
+        fund_categories = get_fund_categories()
+        target_fund = None
+        for cat_name, funds in fund_categories.items():
+            for fund in funds:
+                if fund["code"] == target_fund_code:
+                    target_fund = fund
+                    target_category = cat_name
+                    break
+            if target_fund:
+                break
+        if not target_fund:
+            return f"❌ 未找到基金代码: {target_fund_code}"
+        
+        df = get_fund_data(target_fund_code)
+        intervals = [40, 20, 10, 5, 3, 1]
+        interval_names = ["40日前", "20日前", "10日前", "5日前", "3日前", "最新"]
+        
+        data_rows = []
+        for days, name in zip(intervals, interval_names):
+            if len(df) >= days:
+                nav = df.iloc[days-1]['单位净值']
+                date = df.iloc[days-1]['净值日期'].strftime('%m-%d')
+                data_rows.append({"时间点": name, "日期": date, "净值": nav})
+        
+        result = f"📈 **基金净值变化 - {target_fund['name']} ({target_fund['code']})**\n\n"
+        result += f"分类: {target_category}\n数据截止: {df.iloc[0]['净值日期'].strftime('%Y-%m-%d')}\n\n"
+        
+        result += "| 时间点 |" + "".join([f" {r['时间点']} |" for r in data_rows]) + "\n"
+        result += "|--------|" + "".join(["------|" for _ in data_rows]) + "\n"
+        result += "| 日期 |" + "".join([f" {r['日期']} |" for r in data_rows]) + "\n"
+        result += "| 净值 |" + "".join([f" {r['净值']:.4f} |" for r in data_rows]) + "\n"
+        
+        latest_nav = data_rows[-1]['净值']
+        result += "| 涨跌幅 |"
+        for row in data_rows[:-1]:
+            change = (latest_nav - row['净值']) / row['净值'] * 100
+            result += f" {format_percentage(change, color_mode=True)} |"
+        result += " - |"
+        return result
+    except Exception as e:
+        return f"❌ 查询失败: {str(e)}"
+
+
+def func_3():
     try:
         fund_categories = get_fund_categories()
         intervals = [("40日", 40), ("20日", 20), ("10日", 10), ("5日", 5), ("3日", 3)]
@@ -179,6 +224,7 @@ def func_2():
                         "latest_date": latest_date, "drawdown": drawdown, "peak_date": peak_date
                     })
                 except Exception as e:
+                    print(f"Error: {fund['code']} - {e}")
                     continue
         
         if not table_data:
@@ -201,98 +247,7 @@ def func_2():
     except Exception as e:
         return f"❌ 获取基金数据失败: {str(e)}"
 
-def func_3(fund_code=None):
-    """指定基金净值变化 - 添加估值链接"""
-    try:
-        if fund_code is None:
-            fund_code = "020989"
-        
-        # 获取分类数据
-        fund_categories = get_fund_categories()
-        
-        # 查找目标基金
-        target_fund = None
-        target_category = None
-        for cat_name, funds in fund_categories.items():
-            for fund in funds:
-                if fund["code"] == fund_code:
-                    target_fund = fund
-                    target_category = cat_name
-                    break
-            if target_fund:
-                break
-        
-        if not target_fund:
-            return f"❌ 未找到基金代码: {fund_code}"
-        
-        # 获取对应ETF代码用于跳转
-        etf_mapping = {
-            "纳斯达克100": "513300",
-            "标普500": "513500",
-            "恒生科技": "513180",
-            "中证A500": "159352",
-            "主要消费红利": "159928",
-            "港股通信息技术": "513320",
-            "黄金": "518880",
-        }
-        
-        etf_code = etf_mapping.get(target_category, "")
-        
-        df = get_fund_data(fund_code)
-        intervals = [160, 80, 40, 20, 10, 5, 3, 1]
-        interval_names = ["160日前", "80日前", "40日前", "20日前", "10日前", "5日前", "3日前", "最新"]
-        
-        # 构建净值数据
-        data_rows = []
-        for days, name in zip(intervals, interval_names):
-            if len(df) >= days:
-                nav = df.iloc[days-1]['单位净值']
-                date = df.iloc[days-1]['净值日期'].strftime('%m-%d')
-                data_rows.append({"时间点": name, "日期": date, "净值": nav})
-        
-        # 生成净值表格
-        result = f"📈 **基金净值变化 - {target_fund['name']} ({target_fund['code']})**\n\n"
-        result += f"分类: {target_category}\n"
-        result += f"数据截止: {df.iloc[0]['净值日期'].strftime('%Y-%m-%d')}\n\n"
-        
-        # 构建表头
-        result += "| 指标 |" + "".join([f" {r['时间点']} |" for r in data_rows]) + "\n"
-        result += "|------|" + "".join(["------|" for _ in data_rows]) + "\n"
-        result += "| 日期 |" + "".join([f" {r['日期']} |" for r in data_rows]) + "\n"
-        result += "| 净值 |" + "".join([f" {r['净值']:.4f} |" for r in data_rows]) + "\n"
-        
-        # 涨跌幅行
-        latest_nav = data_rows[-1]['净值']
-        result += "| 涨跌幅 |"
-        for row in data_rows[:-1]:
-            change = (latest_nav - row['净值']) / row['净值'] * 100
-            result += f" {format_percentage(change, color_mode=True)} |"
-        result += " - |\n"
-        
-        # ========== 估值链接 ==========
-        result += "\n---\n\n### 📊 估值查询\n\n"
-        
-        if etf_code:
-            # etf.run 链接
-            etf_run_url = f"https://etf.run/etf/{etf_code}"
-            result += f"**查看估值详情**\n\n"
-            result += f"🔗 [点击查看 {target_category} ETF估值]({etf_run_url})\n\n"
-            result += f"ETF代码: {etf_code}\n\n"
-        else:
-            # 东方财富搜索链接
-            search_url = f"https://quote.eastmoney.com/search.html?keyword={target_category}"
-            result += f"🔗 [点击搜索 {target_category} 估值]({search_url})\n\n"
-        
-        result += "**网站说明:**\n"
-        result += "- etf.run: 提供ETF估值、PE/PB分位等数据\n"
-        result += "- 东方财富: 提供指数估值、历史分位等信息\n\n"
-        result += "💡 点击链接即可查看该指数的实时估值数据\n"
-        
-        return result
-    except Exception as e:
-        return f"❌ 查询失败: {str(e)}"
-    
-    
+
 def func_4():
     result = f"💻 **系统信息**\n\n当前时间: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\nPython版本: {sys.version.split()[0]}\n操作系统: {os.name}\n当前目录: {os.getcwd()}\n"
     try:
@@ -322,14 +277,13 @@ def func_6():
            f"3. 随机选择: {random.choice(['Python', 'Gradio', 'Pyecharts', 'xalpha'])}"
 
 
-# 功能映射
 FUNCTIONS_MAP = {
-    "1": {"func": func_1, "desc": "持仓组合摘要", "emoji": "📊", "has_param": False},
-    "2": {"func": func_2, "desc": "基金涨跌统计", "emoji": "📈", "has_param": False},
-    "3": {"func": func_3, "desc": "指定基金净值", "emoji": "🎲", "has_param": True, "param_desc": "基金代码"},
-    "4": {"func": func_4, "desc": "系统信息", "emoji": "💻", "has_param": False},
-    "5": {"func": func_5, "desc": "网络信息", "emoji": "🌐", "has_param": False},
-    "6": {"func": func_6, "desc": "数据示例", "emoji": "📋", "has_param": False},
+    "1": {"func": func_1, "desc": "持仓组合摘要", "emoji": "📊"},
+    "2": {"func": func_2, "desc": "指定基金净值", "emoji": "📈"},
+    "3": {"func": func_3, "desc": "基金涨跌统计", "emoji": "🎲"},
+    "4": {"func": func_4, "desc": "系统信息", "emoji": "💻"},
+    "5": {"func": func_5, "desc": "网络信息", "emoji": "🌐"},
+    "6": {"func": func_6, "desc": "数据示例", "emoji": "📋"},
 }
 
 
@@ -351,14 +305,11 @@ with gr.Blocks(title="基金数据看板", theme=gr.themes.Soft()) as demo:
             gr.Button("🎨 生成图表", variant="primary").click(fn=build_charts, inputs=chart_types, outputs=gr.HTML(label="图表"))
             
             gr.Markdown("### 💬 数字命令")
-            chat_input = gr.Textbox(label="输入数字", placeholder=f"输入 1-6 或 3 020989", lines=2)
+            chat_input = gr.Textbox(label="输入数字", placeholder=f"输入 1-{len(FUNCTIONS_MAP)}", lines=2)
             chat_send, clear_btn = gr.Button("📨 发送"), gr.Button("🗑️ 清除")
             
-            function_list = "\n".join([
-                f"- **{num}** {info['emoji']} {info['desc']}" + (f" (输入: {num} 基金代码)" if info.get("has_param", False) else "")
-                for num, info in FUNCTIONS_MAP.items()
-            ])
-            gr.Markdown("---\n### 📋 功能对照表\n" + function_list + "\n\n**使用示例:**\n- 输入 `3 020989` 查询指定基金\n- 直接输入 `020989` 快速查询基金\n---")
+            function_list = "\n".join([f"- **{num}** {info['emoji']} {info['desc']}" for num, info in FUNCTIONS_MAP.items()])
+            gr.Markdown("---\n### 📋 功能对照表\n" + function_list + "\n---")
         
         with gr.Column(scale=3):
             chart_output, chatbot = gr.HTML(label="图表"), gr.Chatbot(label="执行结果", height=400)
@@ -367,27 +318,12 @@ with gr.Blocks(title="基金数据看板", theme=gr.themes.Soft()) as demo:
     def send_message(msg, history):
         if not msg or not msg.strip():
             return history, "", history
-        
         msg = msg.strip()
-        parts = msg.split()
-        first_part = parts[0]
-        
-        if first_part.isdigit() and first_part in FUNCTIONS_MAP:
-            info = FUNCTIONS_MAP[first_part]
-            if info.get("has_param", False):
-                if len(parts) >= 2:
-                    param = parts[1]
-                    response = f"{info['emoji']} **{info['desc']} ({param})**\n\n{info['func'](param)}"
-                else:
-                    response = f"{info['emoji']} **{info['desc']} (使用默认代码: 020989)**\n\n{info['func']()}"
-            else:
-                response = f"{info['emoji']} **{info['desc']}**\n\n{info['func']()}"
+        if msg.isdigit() and msg in FUNCTIONS_MAP:
+            info = FUNCTIONS_MAP[msg]
+            response = f"{info['emoji']} **{info['desc']}**\n\n{info['func']()}"
         else:
-            if msg.isdigit() and len(msg) == 6:
-                response = f"📈 **查询基金净值 ({msg})**\n\n{func_3(msg)}"
-            else:
-                response = f"❌ 无效输入\n\n**使用格式:**\n- 数字命令: 1-6\n- 查询基金: `3 020989` 或直接输入基金代码\n\n**可用命令:**\n" + "\n".join([f"  {num} - {info['emoji']} {info['desc']}" for num, info in FUNCTIONS_MAP.items()])
-        
+            response = f"❌ 无效输入\n请输入 1-{len(FUNCTIONS_MAP)} 的数字"
         history.append({"role": "user", "content": f"🔢 {msg}"})
         history.append({"role": "assistant", "content": response})
         return history, "", history
