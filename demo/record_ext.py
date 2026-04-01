@@ -223,7 +223,8 @@ class mulfix_pos:
             .set_global_opts(
                 title_opts=opts.TitleOpts(
                     title=f"持仓总额({fund_total}) + 现金({cash}) = {grand_total}",
-                    pos_left="center"
+                    pos_left="center", 
+                    title_textstyle_opts=opts.TextStyleOpts(color="gold")
                 ),
                 legend_opts=opts.LegendOpts(orient="vertical", pos_left="left"),
             )

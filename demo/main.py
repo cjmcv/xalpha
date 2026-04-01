@@ -1,0 +1,802 @@
+import gradio as gr
+from pyecharts import options as opts
+from pyecharts.charts import Line
+from pyecharts.globals import ThemeType
+import akshare as ak
+import html
+import os
+import pandas as pd
+import random
+import re
+import socket
+import tempfile
+from datetime import datetime, timedelta
+from record_ext import from_positions, mulfix_pos
+
+
+# ==================== 定投份数计算规则 ====================
+# 条件：日定投
+# 纳指/标普：从适中开始，低估300，适中100，高估停止。
+# 宽基/创业板指/科创50/港股信息技术/恒科/消费红利：从低估开始, 低估100，适中50，高估停止。
+RULES = {
+    "ma5": [
+        {"range": (-float('inf'), -8), "shares": 3.0},
+        {"range": (-8, -4), "shares": 2.0},
+        {"range": (-4, -2), "shares": 1.0},
+        {"range": (-2, float('inf')), "shares": 0.0},
+    ],
+    "ma20": [
+        {"range": (-float('inf'), -9), "shares": 1.5},
+        {"range": (-9, -5), "shares": 0.5},
+        {"range": (-5, float('inf')), "shares": 0.0},
+    ],
+    "ma60": [
+        {"range": (-float('inf'), -12), "shares": 1.0},
+        {"range": (-12, -8), "shares": 0.5},
+        {"range": (-8, float('inf')), "shares": 0.0},
+    ],
+    "max": 4.0,
+}
+
+def get_contribution(deviation, rules):
+    """根据偏离度获取贡献份数"""
+    for rule in rules:
+        low, high = rule["range"]
+        if low < deviation <= high:
+            return rule["shares"]
+    return 0.0
+
+def calc_shares(ma5_dev, ma20_dev, ma60_dev):
+    """计算定投份数"""
+    extra = (
+        get_contribution(ma5_dev, RULES["ma5"]) +
+        get_contribution(ma20_dev, RULES["ma20"]) +
+        get_contribution(ma60_dev, RULES["ma60"])
+    )
+    extra = min(extra, RULES["max"])
+    return extra
+
+
+# ==================== 公共工具函数 ====================
+def get_network_info():
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return f"WSL IP: {ip}"
+    except:
+        return "请手动查看WSL IP: ip addr show | grep eth0"
+
+
+def format_percentage(value, color_mode=False):
+    if value is None:
+        return "--"
+    if color_mode:
+        if value > 0:
+            return f'<span style="color: red; font-weight: bold;">+{value:.2f}%</span>'
+        elif value < -5:
+            return f'<span style="color: gold; font-weight: bold;">{value:.2f}%</span>'
+        elif value < -3:
+            return f'<span style="color: darkgoldenrod; font-weight: bold;">{value:.2f}%</span>'
+        elif value < 0:
+            return f'<span style="color: green; font-weight: bold;">{value:.2f}%</span>'
+        return '<span style="color: gray;">0.00%</span>'
+    return f"{value:+.2f}%" if value != 0 else "0.00%"
+
+
+def chart_to_html(chart):
+    with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False) as f:
+        temp_path = f.name
+    chart.render(temp_path)
+    with open(temp_path, 'r', encoding='utf-8') as f:
+        html_content = f.read()
+    os.unlink(temp_path)
+    fixed_html = html_content.replace('<head>', '<head><script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>')
+    return f'<div style="width:100%; height:550px; border:1px solid #333; border-radius:10px; overflow:hidden; background:#1a1a1a;">' \
+           f'<iframe srcdoc="{html.escape(fixed_html)}" style="width:100%; height:100%; border:none;" ' \
+           f'sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe></div>'
+
+
+def get_fund_data(fund_code):
+    df = ak.fund_open_fund_info_em(symbol=fund_code, indicator="单位净值走势")
+    df = df.sort_values('净值日期', ascending=False).reset_index(drop=True)
+    df['单位净值'] = pd.to_numeric(df['单位净值'], errors='coerce')
+    df['日增长率'] = pd.to_numeric(df['日增长率'], errors='coerce')
+    return df
+
+
+def get_fund_positions_data():
+    read = from_positions("./tests/CMB_fund_positions.csv", skiprows=0)
+    sysopen = mulfix_pos(status=read)
+    return sysopen, sysopen.combsummary()
+
+
+def get_fund_categories():
+    sysopen, summary_df = get_fund_positions_data()
+    category_config = sysopen.category_config
+    fund_categories = {}
+    for _, row in summary_df.iterrows():
+        fund_name = row['简称']
+        fund_code = row['产品代码']
+        cat = "其他"
+        for cat_name, config in category_config.items():
+            if config["keywords"] and any(k in fund_name for k in config["keywords"]):
+                cat = cat_name
+                break
+        if len(fund_name) > 11:
+            fund_name = fund_name[:11] + "..."
+        fund_categories.setdefault(cat, []).append({"code": fund_code, "name": fund_name})
+    return fund_categories
+
+
+def parse_cmb_trade_csv():
+    """解析招商银行交易记录CSV"""
+    path = "./tests/CMB_trade_records.csv"
+    for enc in ['gb2312', 'gbk', 'utf-8']:
+        try:
+            with open(path, 'r', encoding=enc) as f:
+                lines = f.readlines()
+            break
+        except UnicodeDecodeError:
+            continue
+
+    data_lines = [l for l in lines if l.strip() and not l.strip().startswith('"#')]
+    header_line = [l for l in data_lines if '交易日期' in l][0]
+    header_idx = data_lines.index(header_line)
+
+    import io
+    csv_text = ''.join(data_lines[header_idx:])
+    df = pd.read_csv(io.StringIO(csv_text))
+    df.columns = df.columns.str.strip()
+    for col in df.columns:
+        if df[col].dtype == object:
+            df[col] = df[col].astype(str).str.strip()
+
+    df['code'] = df['交易备注'].apply(lambda x: re.search(r'\d{5,6}', str(x).strip()).group() if re.search(r'\d{5,6}', str(x).strip()) else None)
+    return df
+
+
+def get_trade_category(code):
+    """根据基金代码获取分类"""
+    sysopen, summary_df = get_fund_positions_data()
+    category_config = sysopen.category_config
+    code_to_name = dict(zip(summary_df['产品代码'].astype(str), summary_df['简称']))
+    name = code_to_name.get(code, "未知")
+    for cat_name, config in category_config.items():
+        if config["keywords"] and any(k in name for k in config["keywords"]):
+            return cat_name
+    return "其他"
+
+
+# ==================== 图表创建 ====================
+def create_fund_pos_ratio_chart():
+    sysopen, summary_df = get_fund_positions_data()
+    chart = sysopen.v_positions(rendered=False)
+
+    # 左侧标签颜色改成白色
+    if "legend" in chart.options and len(chart.options["legend"]) > 0:
+        chart.options["legend"][0]["textStyle"] = {"color": "#FFFFFF"}
+
+    # 标题颜色改成白色，保持原有文本和位置
+    title_opts = chart.options.get("title", [])
+    if isinstance(title_opts, list) and len(title_opts) > 0:
+        if "textStyle" not in title_opts[0]:
+            title_opts[0]["textStyle"] = {}
+        title_opts[0]["textStyle"]["color"] = "#FFFFFF"
+
+    for s in chart.options.get("series", []):
+        if s.get("type") == "pie":
+            s["center"] = ["65%", "50%"]
+    return chart
+
+
+def create_trade_records_charts():
+    """创建权益类申购记录折线图"""
+    try:
+        df = parse_cmb_trade_csv()
+
+        trans_types = ["基金定期定额申购", "基金申购", "基金赎回"]
+        df_filtered = df[df['交易类型'].isin(trans_types) & df['code'].notna()].copy()
+        df_filtered['收入'] = pd.to_numeric(df_filtered['收入'], errors='coerce').fillna(0)
+        df_filtered['支出'] = pd.to_numeric(df_filtered['支出'], errors='coerce').fillna(0)
+        df_filtered['交易类型合并'] = df_filtered['交易类型'].apply(
+            lambda x: '申购' if x in ['基金定期定额申购', '基金申购'] else '赎回'
+        )
+        df_filtered['category'] = df_filtered['code'].apply(get_trade_category)
+        df_filtered['交易日期_str'] = df_filtered['交易日期'].apply(
+            lambda x: str(int(float(x))) if not pd.isna(x) else None
+        )
+        df_filtered = df_filtered[df_filtered['交易日期_str'].notna()].copy()
+        all_dates = sorted(df_filtered['交易日期_str'].unique())
+        x_dates = [d[2:] if len(d) == 8 else d for d in all_dates]
+
+        purchase_lines = []
+        categories = sorted([c for c in df_filtered['category'].unique() if c != "其他"])
+
+        for cat in categories:
+            if cat == "二级债基":
+                continue
+            df_cat = df_filtered[df_filtered['category'] == cat]
+            purchase_values = [
+                df_cat[(df_cat['交易日期_str'] == d) & (df_cat['交易类型合并'] == '申购')]['支出'].sum()
+                for d in all_dates
+            ]
+            cumulative = []
+            total = 0
+            for v in purchase_values:
+                total += v
+                cumulative.append(total)
+            purchase_lines.append((cat, cumulative))
+
+        purchase_chart = (
+            Line(init_opts=opts.InitOpts(width="100%", height="400px", theme=ThemeType.MACARONS, bg_color="#1a1a1a"))
+            .add_xaxis(x_dates)
+        )
+        for name, values in purchase_lines:
+            purchase_chart.add_yaxis(name, values, is_symbol_show=False, linestyle_opts=opts.LineStyleOpts(width=2))
+
+        purchase_chart.set_global_opts(
+            title_opts=opts.TitleOpts(title="权益类申购（累计金额）", title_textstyle_opts=opts.TextStyleOpts(color="#FFFFFF")),
+            tooltip_opts=opts.TooltipOpts(trigger="axis"),
+            legend_opts=opts.LegendOpts(pos_top="5%", textstyle_opts=opts.TextStyleOpts(color="#FFFFFF")),
+            xaxis_opts=opts.AxisOpts(name="日期", name_textstyle_opts=opts.TextStyleOpts(color="#CCCCCC"), axislabel_opts=opts.LabelOpts(color="#CCCCCC")),
+            yaxis_opts=opts.AxisOpts(name="累计金额", name_textstyle_opts=opts.TextStyleOpts(color="#CCCCCC"), axislabel_opts=opts.LabelOpts(color="#CCCCCC")),
+        )
+        purchase_chart.set_series_opts(label_opts=opts.LabelOpts(is_show=False))
+        return [purchase_chart]
+    except:
+        return None
+
+
+def create_erp_chart():
+    """创建股债性价比(ERP)图表"""
+    cache_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".cache")
+    os.makedirs(cache_dir, exist_ok=True)
+    pe_cache_file = os.path.join(cache_dir, "erp_pe_cache.csv")
+    bond_cache_file = os.path.join(cache_dir, "erp_bond_cache.csv")
+
+    today = pd.Timestamp.today().normalize()  # 去掉时间部分，只保留日期
+    today_str = today.strftime("%Y%m%d")
+    three_days_ago = today - pd.Timedelta(days=3)
+
+    # 处理PE数据
+    df_pe = None
+    if os.path.exists(pe_cache_file):
+        df_pe = pd.read_csv(pe_cache_file, parse_dates=["日期"])
+        df_pe = df_pe.set_index("日期").sort_index()
+
+    # 如果缓存不存在或数据超过3天，则获取新数据
+    need_fetch_pe = True
+    if df_pe is not None and len(df_pe) > 0:
+        latest_pe_date = df_pe.index.max().normalize()
+        # 如果最新数据在3天内，不需要获取
+        if latest_pe_date >= three_days_ago:
+            need_fetch_pe = False
+
+    if need_fetch_pe:
+        # akshare的PE数据可以直接获取全部历史
+        df_pe_new = ak.stock_index_pe_lg(symbol="沪深300")
+        df_pe_new["日期"] = pd.to_datetime(df_pe_new["日期"])
+        df_pe_new = df_pe_new.rename(columns={"滚动市盈率": "pe_ttm"}).set_index("日期")[["pe_ttm"]].dropna()
+        if df_pe is not None:
+            df_pe = pd.concat([df_pe, df_pe_new[df_pe_new.index > df_pe.index.max()]]).sort_index()
+        else:
+            df_pe = df_pe_new
+        df_pe.to_csv(pe_cache_file)
+
+    df_pe = df_pe.resample("ME").last()
+
+    # 处理国债收益率数据（逐年获取）
+    df_bond = None
+    if os.path.exists(bond_cache_file):
+        df_bond = pd.read_csv(bond_cache_file, parse_dates=["日期"])
+        df_bond = df_bond.set_index("日期").sort_index()
+
+    # 如果缓存不存在或数据超过3天，则获取新数据
+    need_fetch_bond = True
+    if df_bond is not None and len(df_bond) > 0:
+        latest_bond_date = df_bond.index.max().normalize()
+        # 如果最新数据在3天内，不需要获取
+        if latest_bond_date >= three_days_ago:
+            need_fetch_bond = False
+
+    if need_fetch_bond:
+        # akshare国债数据只能逐年获取，从2020年开始逐年补充到今年
+        start_year = 2020
+        end_year = today.year
+        df_bond_all = []
+        for year in range(start_year, end_year + 1):
+            year_start = f"{year}0101"
+            year_end = f"{year}1231" if year < end_year else today_str
+            try:
+                df_year = ak.bond_china_yield(start_date=year_start, end_date=year_end)
+                df_year = df_year[df_year["曲线名称"] == "中债国债收益率曲线"]
+                df_year = df_year[["日期", "10年"]].rename(columns={"10年": "bond_yield"})
+                df_year["日期"] = pd.to_datetime(df_year["日期"]).dt.tz_localize(None)
+                df_bond_all.append(df_year)
+            except:
+                continue
+        if df_bond_all:
+            df_bond_new = pd.concat(df_bond_all).set_index("日期").sort_index()
+            if df_bond is not None:
+                df_bond = pd.concat([df_bond, df_bond_new[df_bond_new.index > df_bond.index.max()]]).sort_index()
+            else:
+                df_bond = df_bond_new
+            df_bond.to_csv(bond_cache_file)
+
+    df_bond = df_bond.resample("ME").last()
+
+    df = pd.merge(df_pe, df_bond, left_index=True, right_index=True, how="inner").dropna()
+    if df.empty:
+        return None
+
+    df["erp"] = (1 / df["pe_ttm"] - df["bond_yield"] / 100) * 100
+    dates = df.index.strftime("%Y-%m").tolist()
+
+    return (
+        Line(init_opts=opts.InitOpts(width="100%", height="500px", theme=ThemeType.MACARONS, bg_color="#1a1a1a"))
+        .add_xaxis(dates)
+        .add_yaxis("ERP(股债利差) %", df["erp"].round(2).tolist(), yaxis_index=0, is_symbol_show=False, linestyle_opts=opts.LineStyleOpts(width=3))
+        .add_yaxis("10年期国债收益率 %", df["bond_yield"].round(2).tolist(), yaxis_index=1, is_symbol_show=False, linestyle_opts=opts.LineStyleOpts(width=1.5))
+        .add_yaxis("ERP均值 %", [5.0] * len(dates), yaxis_index=0, is_symbol_show=False, linestyle_opts=opts.LineStyleOpts(type_="dashed"))
+        .add_yaxis("80%分位(风险区) %", [4.3] * len(dates), yaxis_index=0, is_symbol_show=False, linestyle_opts=opts.LineStyleOpts(type_="dashed"))
+        .add_yaxis("20%分位(机会区) %", [5.9] * len(dates), yaxis_index=0, is_symbol_show=False, linestyle_opts=opts.LineStyleOpts(type_="dashed"))
+        .set_global_opts(
+            title_opts=opts.TitleOpts(title="股债利差（ERP=1/滚动PE(TTM) - 10年期国债收益率）", subtitle="沪深300", title_textstyle_opts=opts.TextStyleOpts(color="#FFFFFF")),
+            tooltip_opts=opts.TooltipOpts(trigger="axis"),
+            legend_opts=opts.LegendOpts(pos_top="5%", textstyle_opts=opts.TextStyleOpts(color="#FFFFFF")),
+            xaxis_opts=opts.AxisOpts(name="日期", name_textstyle_opts=opts.TextStyleOpts(color="#CCCCCC"), axislabel_opts=opts.LabelOpts(color="#CCCCCC")),
+            yaxis_opts=opts.AxisOpts(name="ERP %", name_textstyle_opts=opts.TextStyleOpts(color="#CCCCCC"), axislabel_opts=opts.LabelOpts(color="#CCCCCC")),
+        )
+        .extend_axis(yaxis=opts.AxisOpts(name="国债收益率 %", position="right", name_textstyle_opts=opts.TextStyleOpts(color="#CCCCCC"), axislabel_opts=opts.LabelOpts(color="#CCCCCC")))
+        .set_series_opts(label_opts=opts.LabelOpts(is_show=False))
+    )
+
+
+def create_fund_trend_chart(fund_code="020989"):
+    """创建基金走势图（5年数据）"""
+    try:
+        df = ak.fund_open_fund_info_em(symbol=fund_code, indicator="单位净值走势")
+        df['净值日期'] = pd.to_datetime(df['净值日期'])
+        df = df.sort_values('净值日期', ascending=True).reset_index(drop=True)
+        df['单位净值'] = pd.to_numeric(df['单位净值'], errors='coerce')
+
+        latest_date = df['净值日期'].max()
+        df = df[df['净值日期'] >= (latest_date - timedelta(days=5*365))]
+
+        fund_categories = get_fund_categories()
+        category_name = fund_code
+        for cat, funds in fund_categories.items():
+            for f in funds:
+                if f["code"] == fund_code:
+                    category_name = f"{cat} {fund_code}"
+                    break
+
+        dates = df['净值日期'].dt.strftime('%Y-%m-%d').tolist()
+        nav_values = df['单位净值'].tolist()
+
+        return (
+            Line(init_opts=opts.InitOpts(width="100%", height="400px", theme=ThemeType.MACARONS, bg_color="#1a1a1a"))
+            .add_xaxis(dates)
+            .add_yaxis("单位净值", nav_values, is_symbol_show=False)
+            .set_global_opts(
+                title_opts=opts.TitleOpts(title=f"基金详情 {category_name}", title_textstyle_opts=opts.TextStyleOpts(color="#FFFFFF")),
+                tooltip_opts=opts.TooltipOpts(trigger="axis"),
+                legend_opts=opts.LegendOpts(pos_top="5%", textstyle_opts=opts.TextStyleOpts(color="#FFFFFF")),
+                xaxis_opts=opts.AxisOpts(name="日期", name_textstyle_opts=opts.TextStyleOpts(color="#CCCCCC"), axislabel_opts=opts.LabelOpts(color="#CCCCCC")),
+                yaxis_opts=opts.AxisOpts(name="单位净值", name_textstyle_opts=opts.TextStyleOpts(color="#CCCCCC"), axislabel_opts=opts.LabelOpts(color="#CCCCCC"), splitline_opts=opts.SplitLineOpts(is_show=True, linestyle_opts=opts.LineStyleOpts(color="#333333")), min_="dataMin"),
+            )
+            .set_series_opts(label_opts=opts.LabelOpts(is_show=False))
+        )
+    except:
+        return None
+
+
+# ==================== 数字功能函数 ====================
+def fund_pos_detail():
+    try:
+        _, summary_df = get_fund_positions_data()
+        result = "📊 **持仓组合摘要**\n\n"
+        result += "| 产品代码 | 简称 | 基金份额 | 单位净值 | 总成本 | 参考市值 | 浮动盈亏 | 收益率 | 占比 |\n"
+        result += "|----------|------|----------|----------|--------|----------|----------|--------|------|\n"
+        for _, row in summary_df.iterrows():
+            result += f"| {row['产品代码']} | {row['简称']} | {row['基金份额']:.2f} | {row['单位净值']:.4f} | "
+            result += f"{row['总成本']:.2f} | {row['参考市值']:.2f} | {row['浮动盈亏']:.2f} | {format_percentage(row['收益率'])} | {row['占比']:.2f}% |\n"
+        total_market = summary_df['参考市值'].sum()
+        total_cost = summary_df['总成本'].sum()
+        total_profit = total_market - total_cost
+        total_rate = (total_profit / total_cost * 100) if total_cost > 0 else 0
+        result += f"\n---\n\n**📈 组合汇总**\n\n- **总市值**: {total_market:.2f} 元\n- **总成本**: {total_cost:.2f} 元\n"
+        result += f"- **总盈亏**: {format_percentage(total_profit)} 元\n- **总收益率**: {format_percentage(total_rate)}\n"
+        return result
+    except Exception as e:
+        return f"❌ 读取持仓信息失败: {str(e)}"
+
+
+def fund_pos_change_stat():
+    """持仓基金涨跌幅统计"""
+    try:
+        fund_categories = get_fund_categories()
+        table_data = []
+
+        for cat_name, funds in fund_categories.items():
+            funds_to_show = funds if cat_name == "二级债基" else funds[:1]
+            for fund in funds_to_show:
+                try:
+                    df = get_fund_data(fund["code"])
+                    if df.empty or len(df) < 3:
+                        continue
+
+                    latest_nav = df.iloc[0]['单位净值']
+                    # 只保留1日涨跌
+                    if len(df) > 1:
+                        nav_1_ago = df.iloc[1]['单位净值']
+                        change_1d = (latest_nav - nav_1_ago) / nav_1_ago * 100
+                    else:
+                        change_1d = None
+
+                    # 计算距20日均值（当前净值与过去20个交易日均值百分比差值）
+                    if len(df) > 20:
+                        nav_20_avg = df.iloc[1:21]['单位净值'].mean()
+                        change_20_avg = (latest_nav - nav_20_avg) / nav_20_avg * 100
+                    else:
+                        change_20_avg = None
+
+                    # 计算距60日均值（当前净值与过去60个交易日均值百分比差值）
+                    if len(df) > 60:
+                        nav_60_avg = df.iloc[1:61]['单位净值'].mean()
+                        change_60_avg = (latest_nav - nav_60_avg) / nav_60_avg * 100
+                    else:
+                        change_60_avg = None
+
+                    # 计算距5日均值（当前净值与过去5个交易日均值百分比差值）
+                    if len(df) >= 5:
+                        nav_5_avg = df.iloc[1:6]['单位净值'].mean()
+                        change_5_avg = (latest_nav - nav_5_avg) / nav_5_avg * 100
+                    else:
+                        nav_5_avg = None
+                        change_5_avg = None
+
+                    df_asc = df.sort_values('净值日期', ascending=True).reset_index(drop=True)
+                    one_year_data = df_asc[df_asc['净值日期'] >= (df_asc.iloc[-1]['净值日期'] - pd.Timedelta(days=365))]
+                    if len(one_year_data) > 0:
+                        max_idx = one_year_data['单位净值'].idxmax()
+                        max_nav = one_year_data.loc[max_idx, '单位净值']
+                        peak_date = one_year_data.loc[max_idx, '净值日期'].strftime('%m-%d')
+                        drawdown = (max_nav - latest_nav) / max_nav * 100
+                    else:
+                        drawdown, peak_date = None, None
+
+                    one_day_date = df.iloc[0]['净值日期'].strftime('%m-%d') if len(df) > 0 else ""
+
+                    # 计算各涨跌幅 scenario 下的定投份数
+                    # hypo_nav 作为明天的净值，需要重新计算 ma5/ma20/ma60
+                    scenarios = {}
+                    for pct in [4, 2, 0, -2, -4]:
+                        change_rate = pct / 100.0
+                        hypo_nav = latest_nav * (1 + change_rate)
+                        # ma5: hypo_nav + 之前4天 (df.iloc[0:4])
+                        if len(df) >= 5:
+                            hypo_ma5 = (hypo_nav + df.iloc[0:4]['单位净值'].sum()) / 5
+                            hypo_ma5_dev = (hypo_nav - hypo_ma5) / hypo_ma5 * 100
+                        else:
+                            hypo_ma5_dev = 0
+                        # ma20: hypo_nav + 之前19天 (df.iloc[0:19])
+                        if len(df) >= 20:
+                            hypo_ma20 = (hypo_nav + df.iloc[0:19]['单位净值'].sum()) / 20
+                            hypo_ma20_dev = (hypo_nav - hypo_ma20) / hypo_ma20 * 100
+                        else:
+                            hypo_ma20_dev = 0
+                        # ma60: hypo_nav + 之前59天 (df.iloc[0:59])
+                        if len(df) >= 60:
+                            hypo_ma60 = (hypo_nav + df.iloc[0:59]['单位净值'].sum()) / 60
+                            hypo_ma60_dev = (hypo_nav - hypo_ma60) / hypo_ma60 * 100
+                        else:
+                            hypo_ma60_dev = 0
+                        scenarios[pct] = calc_shares(hypo_ma5_dev, hypo_ma20_dev, hypo_ma60_dev)
+
+                    table_data.append({"category": cat_name, "code": fund["code"], "name": fund["name"],
+                                       "drawdown": drawdown, "peak_date": peak_date, "one_day_date": one_day_date,
+                                       "change_1d": change_1d, "change_5_avg": change_5_avg, "change_20_avg": change_20_avg, "change_60_avg": change_60_avg,
+                                       "scenarios": scenarios})
+                except:
+                    continue
+
+        if not table_data:
+            return "❌ 无法获取任何基金数据"
+
+        result = "📊 **持仓分类基金近期涨跌幅统计**\n\n"
+        result += "| 分类 | 基金代码 | 基金简称 | 距一年高点 | 距60日均值 | 距20日均值 | 距5日均值 | 最新涨跌 | +4% | +2% | 0% | -2% | -4% |\n"
+        result += "|------|-------|-------|----------------|-------------|-------------|-------------|------------|-----|-----|-----|-----|-----|\n"
+
+        for item in table_data:
+            if item["drawdown"] is None:
+                dd_str = "--"
+            else:
+                dd_str = format_percentage(-item["drawdown"], color_mode=True) + f' <span style="color: gray;">({item["peak_date"]})</span>'
+            change_60_str = format_percentage(item["change_60_avg"], color_mode=True) if item["change_60_avg"] is not None else "--"
+            change_20_str = format_percentage(item["change_20_avg"], color_mode=True) if item["change_20_avg"] is not None else "--"
+            change_5_str = format_percentage(item["change_5_avg"], color_mode=True) if item["change_5_avg"] is not None else "--"
+            change_1d_str = format_percentage(item["change_1d"], color_mode=True) if item["change_1d"] is not None else "--"
+            change_1d_full = change_1d_str + f' <span style="color: gray;">({item["one_day_date"]})</span>' if item["one_day_date"] else change_1d_str
+            s = item["scenarios"]
+            # 加仓份数大于0显示金色
+            def fmt_share(v):
+                if v > 0:
+                    return f'<span style="color: gold; font-weight: bold;">{v:.1f}</span>'
+                return f'{v:.1f}'
+            result += f"| {item['category']} | {item['code']} | {item['name']} | {dd_str} | {change_60_str} | {change_20_str} | {change_5_str} | {change_1d_full} | {fmt_share(s[4])} | {fmt_share(s[2])} | {fmt_share(s[0])} | {fmt_share(s[-2])} | {fmt_share(s[-4])} |\n"
+        return result
+    except Exception as e:
+        return f"❌ 获取基金数据失败: {str(e)}"
+
+
+def get_fund_detail(fund_code=None):
+    """指定基金详情"""
+    try:
+        fund_code = fund_code or "020989"
+        fund_categories = get_fund_categories()
+
+        target_fund = None
+        target_category = None
+        for cat_name, funds in fund_categories.items():
+            for fund in funds:
+                if fund["code"] == fund_code:
+                    target_fund = fund
+                    target_category = cat_name
+                    break
+            if target_fund:
+                break
+
+        if not target_fund:
+            return f"❌ 未找到基金代码: {fund_code}"
+
+        dj_index_code_map = {"恒生科技": "HKHSTECH", "主要消费红利": "CSIH30094", "纳斯达克100": "NDX", "标普500": "SP500"}
+        etfrun_index_code_map = {"中证A500": "SSE/000510", "主要消费红利": "CSI/h30094"}
+
+        df = get_fund_data(fund_code)
+        intervals = [260, 160, 80, 40, 20, 10, 5, 4, 3, 2, 1]
+        interval_names = ["260日", "160日", "80日", "40日", "20日", "10日", "5日", "4日", "3日", "2日", "1日"]
+
+        data_rows = []
+        for days, name in zip(intervals, interval_names):
+            if len(df) > days:
+                nav = df.iloc[days]['单位净值']
+                date = df.iloc[0 if days == 1 else days]['净值日期'].strftime('%m-%d')
+                data_rows.append({"时间点": name, "日期": date, "净值": nav})
+
+        result = f"📈 **基金详情 - {target_fund['name']} ({target_fund['code']})**\n\n"
+        result += f"分类: {target_category}\n"
+        result += f"数据截止: {df.iloc[0]['净值日期'].strftime('%Y-%m-%d')}\n\n"
+        result += "| 指标 |" + "".join([f" {r['时间点']} |" for r in data_rows]) + "\n"
+        result += "|------|" + "".join(["------|" for _ in data_rows]) + "\n"
+        result += "| 日期 |" + "".join([f" {r['日期']} |" for r in data_rows]) + "\n"
+        result += "| 净值 |" + "".join([f" {r['净值']:.4f} |" for r in data_rows]) + "\n"
+
+        latest_nav = df.iloc[0]['单位净值']
+        result += "| 涨跌幅 |"
+        for row in data_rows:
+            change = (latest_nav - row['净值']) / row['净值'] * 100
+            result += f" {format_percentage(change, color_mode=True)} |"
+        result += "\n\n---\n\n### 📊 估值查询\n"
+
+        if target_category in dj_index_code_map:
+            index_code = dj_index_code_map[target_category]
+            result += f"**查看估值详情**\n\n🔗 [点击查看 {target_category} 指数估值（雪球基金）](https://danjuanfunds.com/dj-valuation-table-detail/{index_code})\n\n指数代码: {index_code}（雪球基金）\n\n"
+
+        if target_category in etfrun_index_code_map:
+            index_code = etfrun_index_code_map[target_category]
+            result += f"**查看估值详情**\n\n🔗 [点击查看 {target_category} 指数估值（etf.run）](https://www.etf.run/index/{index_code})\n\n指数代码: {index_code}（etf.run）\n\n"
+
+        result += "**其他PE/PB数据:**\n- 且慢: https://qieman.com/idx-eval\n"
+        return result
+    except Exception as e:
+        return f"❌ 查询失败: {str(e)}"
+
+
+def func_3():
+    """网络信息"""
+    try:
+        hostname = socket.gethostname()
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        s.connect(("8.8.8.8", 80))
+        ip = s.getsockname()[0]
+        s.close()
+        return f"🌐 **网络信息**\n\n主机名: {hostname}\nIP地址: {ip}\n端口: 7860\n访问地址: http://{ip}:7860"
+    except Exception as e:
+        return f"❌ 获取网络信息失败: {str(e)}"
+
+
+def func_4():
+    """招商银行申购记录统计"""
+    try:
+        df = parse_cmb_trade_csv()
+
+        trans_types = ["基金定期定额申购", "基金申购", "基金赎回"]
+        df_filtered = df[df['交易类型'].isin(trans_types) & df['code'].notna()].copy()
+        df_filtered['收入'] = pd.to_numeric(df_filtered['收入'], errors='coerce').fillna(0)
+        df_filtered['支出'] = pd.to_numeric(df_filtered['支出'], errors='coerce').fillna(0)
+        df_filtered['交易类型合并'] = df_filtered['交易类型'].apply(lambda x: '申购' if x in ['基金定期定额申购', '基金申购'] else '赎回')
+        df_filtered['category'] = df_filtered['code'].apply(get_trade_category)
+        df_filtered['交易日期_str'] = df_filtered['交易日期'].apply(lambda x: str(int(float(x))) if not pd.isna(x) else None)
+        df_filtered = df_filtered[df_filtered['交易日期_str'].notna()].copy()
+        all_dates = sorted(df_filtered['交易日期_str'].unique())
+        categories = sorted(df_filtered['category'].unique())
+
+        sysopen, summary_df = get_fund_positions_data()
+        code_to_name = dict(zip(summary_df['产品代码'].astype(str), summary_df['简称']))
+
+        result = "📋 **招商银行申购记录统计**\n\n"
+        result += f"数据日期范围: {all_dates[-1]} ~ {all_dates[0]}\n\n"
+
+        for trans_label, trans_key in [("申购", "申购"), ("赎回", "赎回")]:
+            df_trans = df_filtered[df_filtered['交易类型合并'] == trans_key]
+            if df_trans.empty:
+                continue
+
+            header_dates = [d[2:] if len(d) == 8 else d for d in all_dates]
+            result += f"### {trans_label}\n\n"
+            result += "| 分类 | " + " | ".join(header_dates) + " |\n"
+            result += "|------|" + "|------|" * len(header_dates) + "\n"
+
+            for cat in categories:
+                df_cat = df_trans[df_trans['category'] == cat]
+                if df_cat.empty:
+                    continue
+
+                if cat == "二级债基":
+                    for code in sorted(df_cat['code'].unique()):
+                        name = code_to_name.get(code, "未知")
+                        name = name[:10] + "..." if len(name) > 10 else name
+                        row_values = [f"{name} ({code})"]
+                        for date in all_dates:
+                            df_fund_date = df_cat[(df_cat['code'] == code) & (df_cat['交易日期_str'] == date)]
+                            total = df_fund_date['支出'].sum() if trans_key == "申购" else df_fund_date['收入'].sum()
+                            row_values.append(f"{total:.0f}" if total > 0 else "-")
+                        result += "| " + " | ".join(row_values) + " |\n"
+                else:
+                    row_values = [cat]
+                    for date in all_dates:
+                        df_cat_date = df_cat[df_cat['交易日期_str'] == date]
+                        total = df_cat_date['支出'].sum() if trans_key == "申购" else df_cat_date['收入'].sum()
+                        row_values.append(f"{total:.0f}" if total > 0 else "-")
+                    result += "| " + " | ".join(row_values) + " |\n"
+            result += "\n"
+
+        return result if categories else "❌ 无有效申购记录"
+    except Exception as e:
+        return f"❌ 读取申购记录失败: {str(e)}"
+
+
+def func_5():
+    """网络信息"""
+    return func_3()
+
+
+def func_6():
+    return f"📋 **数据示例**\n\n1. 随机数: {', '.join(map(str, [random.randint(1, 100) for _ in range(5)]))}\n" \
+           f"2. 时间戳: {int(datetime.now().timestamp())}\n" \
+           f"3. 随机选择: {random.choice(['Python', 'Gradio', 'Pyecharts', 'xalpha'])}"
+
+
+# 功能映射
+FUNCTIONS_MAP = {
+    "1": {"func": fund_pos_detail, "desc": "持仓组合摘要", "emoji": "📊", "has_param": False},
+    "2": {"func": fund_pos_change_stat, "desc": "持仓基金涨跌统计", "emoji": "📈", "has_param": False},
+    "3": {"func": func_3, "desc": "查阅基金(如020989)", "emoji": "🎲", "has_param": True, "param_desc": "基金代码"},
+    "4": {"func": func_4, "desc": "系统信息", "emoji": "💻", "has_param": False},
+    "5": {"func": func_5, "desc": "网络信息", "emoji": "🌐", "has_param": False},
+    "6": {"func": func_6, "desc": "数据示例", "emoji": "📋", "has_param": False},
+}
+
+
+def build_charts(selected_types, fund_code="020989"):
+    charts_map = {
+        "持仓分布": create_fund_pos_ratio_chart,
+        "申购记录": create_trade_records_charts,
+        "股债利差": create_erp_chart,
+        "基金详情": lambda: create_fund_trend_chart(fund_code)
+    }
+    html_parts = []
+    for t in selected_types:
+        if t in charts_map:
+            result = charts_map[t]()
+            if result is not None:
+                if isinstance(result, list):
+                    html_parts.extend([chart_to_html(c) for c in result])
+                else:
+                    html_parts.append(chart_to_html(result))
+    return "".join(html_parts) if html_parts else '<div style="height:550px;display:flex;align-items:center;justify-content:center;">请勾选图表</div>'
+
+
+# 创建界面
+with gr.Blocks(title="基金数据看板", theme=gr.themes.Soft()) as demo:
+    gr.HTML(f'<div style="text-align:center; padding:20px; background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius:10px;">'
+            f'<h1 style="color:white;">📊 基金数据看板</h1><p style="color:white;">{get_network_info()} | 本地: http://localhost:7860</p></div>')
+
+    with gr.Row():
+        with gr.Column(scale=1):
+            gr.Markdown("**图表类型**")
+            chart_1 = gr.Checkbox(label="持仓分布", value=True)
+            chart_2 = gr.Checkbox(label="申购记录", value=False)
+            chart_3 = gr.Checkbox(label="股债利差", value=False)
+            chart_4 = gr.Checkbox(label="基金详情", value=False)
+            fund_code_input = gr.Textbox(label="基金代码", value="020989", lines=1)
+
+            def combine_charts(c1, c2, c3, c4):
+                selected = []
+                if c1: selected.append("持仓分布")
+                if c2: selected.append("申购记录")
+                if c3: selected.append("股债利差")
+                if c4: selected.append("基金详情")
+                return selected
+
+            generate_btn = gr.Button("🎨 生成图表", variant="primary")
+
+            gr.Markdown("---")
+            chat_input = gr.Textbox(label="💬 数字命令", placeholder="输入 1-6", lines=2)
+
+            with gr.Row():
+                chat_send = gr.Button("📨 发送", variant="primary", scale=1)
+                clear_btn = gr.Button("🗑️ 清除", scale=1)
+
+            function_list = "\n".join([f"- **{num}** {info['emoji']} {info['desc']}" for num, info in FUNCTIONS_MAP.items()])
+            gr.Markdown(function_list + "\n---")
+
+        with gr.Column(scale=3):
+            chart_output = gr.HTML(label="图表")
+
+    with gr.Row():
+        with gr.Column(scale=1):
+            chatbot = gr.Chatbot(label="执行结果", height=600)
+            chat_history = gr.State([])
+
+    def generate_charts_with_detail(a, b, c, d, code, history):
+        selected = combine_charts(a, b, c, d)
+        chart_html = build_charts(selected, code)
+        if d and code:
+            detail = get_fund_detail(code)
+            history = history + [{"role": "user", "content": f"📈 基金详情 ({code})"}, {"role": "assistant", "content": detail}]
+        return chart_html, history, history
+
+    generate_btn.click(
+        fn=generate_charts_with_detail,
+        inputs=[chart_1, chart_2, chart_3, chart_4, fund_code_input, chat_history],
+        outputs=[chart_output, chatbot, chat_history]
+    )
+
+    def send_message(msg, history):
+        if not msg or not msg.strip():
+            return history, "", history, gr.update()
+
+        msg = msg.strip()
+        parts = msg.split()
+        first_part = parts[0]
+        new_fund_code = gr.update()
+
+        if first_part.isdigit() and first_part in FUNCTIONS_MAP:
+            info = FUNCTIONS_MAP[first_part]
+            if info.get("has_param", False):
+                param = parts[1] if len(parts) >= 2 else "020989"
+                response = f"{info['emoji']} **{info['desc']} ({param})**\n\n{info['func'](param)}"
+                if param.isdigit() and len(param) == 6:
+                    new_fund_code = param
+            else:
+                response = f"{info['emoji']} **{info['desc']}**\n\n{info['func']()}"
+        else:
+            response = f"❌ 无效输入\n\n**使用格式:**\n- 数字命令: 1-6\n\n**可用命令:**\n" + "\n".join([f"  {num} - {info['emoji']} {info['desc']}" for num, info in FUNCTIONS_MAP.items()])
+
+        history.append({"role": "user", "content": f"🔢 {msg}"})
+        history.append({"role": "assistant", "content": response})
+        return history, "", history, new_fund_code
+
+    chat_send.click(send_message, [chat_input, chat_history], [chatbot, chat_input, chat_history, fund_code_input])
+    chat_input.submit(send_message, [chat_input, chat_history], [chatbot, chat_input, chat_history, fund_code_input])
+    clear_btn.click(lambda: ([], ""), None, [chatbot, chat_input])
+
+    demo.load(fn=lambda: build_charts(["持仓分布"]), outputs=chart_output)
+
+
+if __name__ == "__main__":
+    demo.launch(server_name="0.0.0.0", server_port=7860, debug=True)
