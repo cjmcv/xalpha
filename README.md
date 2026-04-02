@@ -1,5 +1,10 @@
 # xalpha
 
+
+https://app.tavily.com/: 国外新闻，手机邮箱账号
+https://serpapi.com/search-api: 国内新闻，google邮箱账号
+
+
 [![version](https://img.shields.io/pypi/v/xalpha.svg)](https://pypi.org/project/xalpha/)
 [![doc](https://readthedocs.org/projects/xalpha/badge/?style=flat)](https://xalpha.readthedocs.io/)
 [![codecov](https://codecov.io/gh/refraction-ray/xalpha/branch/master/graph/badge.svg)](https://codecov.io/gh/refraction-ray/xalpha)

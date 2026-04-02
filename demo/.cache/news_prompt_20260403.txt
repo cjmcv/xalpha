@@ -1,0 +1,108 @@
+**报告生成时间**：2026-04-03 01:21:42
+## 📊 新闻来源统计
+| 来源 | 数量 |
+|------|------|
+| 国际财经 (Tavily) | 10 条 |
+| 国内财经 (SerpAPI) | 10 条 |
+| **合计** | **20 条** |
+---
+## 📰 分类新闻汇总
+
+### 【美股市场】（3条）
+**1. AASTOCKS 財經新聞- 重點新聞**
+- 来源：AASTOCKS.com (SerpAPI)
+- 时间：2026-04-03
+- 摘要：AASTOCKS 財經新聞- 重點新聞 · 美股假前部署！ 港美科技股策略？ · 戰事加速惡化？！必備黃金抗通脹？ · Frederick分析：長假前輕倉? · 特朗普宣布已勝利股市即跌 · 港股反彈未見頂？
+- 链接：http://www.aastocks.com/tc/stocks/news/aafn
+**2. 股市实时消息滚动播报**
+- 来源：证券时报 (SerpAPI)
+- 时间：2026-04-03
+- 摘要：深夜，集体拉升！超11万人爆仓！特朗普：将很快撤出伊朗战事！局势将走向何方？ 市场风险偏好回升！北京时间周三晚间，美股市场延续涨势。截至记者发稿，纳指涨超1%。芯片股集体 ...
+- 链接：https://www.stcn.com/article/list/gd.html
+**3. 今日股市最新消息_股票新闻头条**
+- 来源：英为财情 Investing.com (SerpAPI)
+- 时间：2026-04-03
+- 摘要：英为财情股市新闻频道提供7×24小时股市新闻快讯，包括今天股市最新消息新闻，热门股票新闻，沪深股市、港股、欧洲股市、美股等国内和世界今日股市新闻头条。
+- 链接：https://cn.investing.com/news/stock-market-news
+
+### 【A股市场】（1条）
+**1. 财经首页- 东方财富网**
+- 来源：东方财富 (SerpAPI)
+- 时间：2026-04-03
+- 摘要：3月A股新开460万户同环比各创高增谁正进场逆势布局？ 19:42. 工信部首提“算力银行”“算力超市” 降低中小企业用算门槛.
+- 链接：https://finance.eastmoney.com/
+
+### 【政策动态】（2条）
+**1. AASTOCKS 财经新闻- 国家政策**
+- 来源：AASTOCKS.com (SerpAPI)
+- 时间：2026-04-03
+- 摘要：AI股疑虑再起展望2026年必备股份？ 滙控创历史新高！2026继续有睇头？ 年尾部署：减仓还是加注？ 小米、商汤下挫！年尾大执仓！ 谭神2025总结！2026入市时机？ 2026年开局展望低吸 ...
+- 链接：https://wdatacn.aastocks.com/sc/stocks/news/aafn/china-policy
+**2. 今天最新全球财经资讯**
+- 来源：英为财情 Investing.com (SerpAPI)
+- 时间：2026-04-03
+- 摘要：英为财情财经资讯频道提供每日经济资讯，包括今天最新的经济大事、金融事件、外汇资讯、央行动向及期货、股指、和经济指标等热门财经资讯报道。
+- 链接：https://cn.investing.com/news
+
+### 【行业板块】（10条）
+**1. U.S. equities ended higher as hopes of Iran conflict de-escalation lifted sentiment - Seeking Alpha**
+- 来源：未知 (Tavily)
+- 时间：未知
+- 摘要：Home page Seeking Alpha - Power to Investors. Search for Symbols, analysts, keywords. # U.S. equities ended higher as hopes of Iran conflict de-escalation lifted sentiment. Apr 01, 2026, 4:05 PM ETDow
+- 链接：https://seekingalpha.com/news/4571343-us-equities-advanced-as-hopes-of-iran-conflict-de-escalation-lifts-sentiment
+**2. Evolution Mining Reports Lapse of 1.37 Million Performance Rights - TipRanks**
+- 来源：未知 (Tavily)
+- 时间：未知
+- 摘要：* Discover top-performing stock ideas and upgrade to a portfolio of market leaders with  Smart Investor Picks. Evolution Mining Limited has notified the market that 1,372,955 performance rights, tradi
+- 链接：https://www.tipranks.com/news/company-announcements/evolution-mining-reports-lapse-of-1-37-million-performance-rights
+**3. Citi: remains our S&P 500 year-end target at 7,700, U.S. Q1 earnings will be solid - CNBC**
+- 来源：未知 (Tavily)
+- 时间：未知
+- 摘要：# Citi: remains our S&P 500 year-end target at 7,700, U.S. Q1 earnings will be solid. Scott Chronert of Citi says U.S. corporates remain fundamentally strong, with earnings holding up well, but forwar
+- 链接：https://www.cnbc.com/video/2026/04/02/sp-wall-street-us-market-iran-war-oil-price-us-earnings.html
+**4. Market technicals showing lows may be behind us, says 3Fourteen's Warren Pies - cnbc.com**
+- 来源：未知 (Tavily)
+- 时间：未知
+- 摘要：# Market technicals showing lows may be behind us, says 3Fourteen's Warren Pies. Warren Pies, 3Fourteen Research, joins 'Closing Bell' to discuss what markets need before investors can feel better, th
+- 链接：https://www.cnbc.com/video/2026/04/01/market-technicals-showing-lows-may-be-behind-us-says-3fourteens-warren-pies.html
+**5. AI-Driven Workforce Planning Elevates Finance–HR Alignment at TeamOhana - TipRanks**
+- 来源：未知 (Tavily)
+- 时间：未知
+- 摘要：According to a recent LinkedIn post from TeamOhana, the company is drawing attention to commentary from Brex CFO and President Ben Gammell on how AI-driven organizational change may reshape the relati
+- 链接：https://www.tipranks.com/news/private-companies/ai-driven-workforce-planning-elevates-finance-hr-alignment-at-teamohana
+
+### 【其他】（4条）
+**1. 财经要闻频道,今日要闻，炒股消息，股市重大消息**
+- 来源：证券时报 (SerpAPI)
+- 时间：2026-04-03
+- 摘要：沪市年报披露分红额已超8000亿元，多家公司2026年中期分红“已安排” · 进入年报披露“最后一月”，上市公司定期报告密集披露，同步“上线”的还有公司的年度“红包”和年度分红 ...
+- 链接：https://www.stcn.com/article/list/yw.html
+**2. 全球财经快讯_东方财富网**
+- 来源：东方财富 (SerpAPI)
+- 时间：1天前
+- 摘要：东方财富网全球财经快讯为投资者24小时提供最全面最及时的新闻资讯；直播内容覆盖证券、商品、外汇、债券、黄金等金融领域。投资者还可以查看最实时、 ...
+- 链接：https://kuaixun.eastmoney.com/index.html
+**3. 财经资讯头条_今日财经要闻报道**
+- 来源：英为财情 Investing.com (SerpAPI)
+- 时间：2026-04-03
+- 摘要：Investing.com上最热门的财经资讯，今日重大财经资讯一览无余，每日最新财经资讯头条按读者关注度排列。 特朗普言论吓崩全球市场！美指期货跌约1%，韩股重挫4%，币圈超13万人爆 ...
+- 链接：https://cn.investing.com/news/most-popular-news
+**4. 全球财经新闻最新消息**
+- 来源：英为财情 Investing.com (SerpAPI)
+- 时间：2026-04-03
+- 摘要：英为财情提供7×24小时每日最新财经资讯，今天国际和国内财经大事件最新消息，涵盖全球股市、外汇、期货、虚拟货币的经济资讯报道。
+- 链接：https://cn.investing.com/news/latest-news
+
+---
+## 📋 分析报告框架
+请按以下结构输出分析报告：
+### 一、全球市场概览
+### 二、核心事件解读（3-5件）
+### 三、政策动态追踪
+### 四、行业热点分析
+### 五、重点关注公司
+### 六、宏观环境判断
+### 七、风险因素提醒
+### 八、投资策略建议
+---
+**要求**：专业客观，避免预测具体点位，侧重趋势和逻辑分析，区分短期波动和长期趋势

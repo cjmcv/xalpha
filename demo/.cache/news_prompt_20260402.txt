@@ -1,0 +1,101 @@
+**报告生成时间**：2026-04-02 22:58:37
+## 📊 新闻来源统计
+| 来源 | 数量 |
+|------|------|
+| 国际财经 (Tavily) | 10 条 |
+| 国内财经 (SerpAPI) | 10 条 |
+| **合计** | **20 条** |
+---
+## 📰 分类新闻汇总
+
+### 【A股市场】（6条）
+**1. 上证指数(000001)_股票行情_走势图**
+- 来源：东方财富 (SerpAPI)
+- 时间：2026-04-02
+- 摘要：提供上证指数(000001)的行情走势、资金流向、行业概念板块排行、成份股排行、大盘分析、证券聚焦、市场总貌、股吧互动等与上证指数(000001)有关的信息和服务。
+- 链接：https://quote.eastmoney.com/zs000001.html?jump_to_web=true
+**2. 每日股市行情,热门股市板块**
+- 来源：证券时报 (SerpAPI)
+- 时间：2026-04-02
+- 摘要：A股全线走高，沪指涨超1%，科创综指大涨超3%；港股亦走强，恒生指数、恒生科技指数均涨超2%。具体来看，A股主要股指盘中震荡上行，沪指涨超1%，站稳3900点；创业板指、科创综指等 ...
+- 链接：https://www.stcn.com/article/list/gs.html
+**3. 同花顺股票频道—提供最新的A股上市公司新闻、行情、公告及 ...**
+- 来源：同花顺财经 (SerpAPI)
+- 时间：2026-04-02
+- 摘要：同花顺股票频道，专业的财经证券资讯平台。提供A股市场上市公司公告。助您轻松掌握A股走势、热点新闻，是您高效炒股、把握投资机会的必备股票信息来源.
+- 链接：https://stock.10jqka.com.cn/
+**4. A股4月“开门红”，拐点来了吗？**
+- 来源：新浪财经 (SerpAPI)
+- 时间：24小时前
+- 摘要：受访人士分析，A股反弹具备一定延续性，但关键要看量能能否持续，趋势性反转尚未形成。需等到4月中下旬一季报业绩明朗、国内政策导向进一步清晰，以及中东地缘 ...
+- 链接：https://finance.sina.cn/stock/ggyj/2026-04-01/detail-inhszihs1534524.d.html?oid=3781228589423950&vt=4
+**5. 财经中心_中国网**
+- 来源：中国财经 (SerpAPI)
+- 时间：2026-04-02
+- 摘要：上证指数. 3948.55. 56.69|1.46% ; 深证成指. 13706.52. 228.46|1.70% ; 创业板指. 3247.52. 62.57|1.96% ; 沪深300. 4526.07. 76.02|1.71% ; 恒生指数. 25357.23. 505.89|2.04 ...
+- 链接：http://finance.china.com.cn/
+
+### 【政策动态】（1条）
+**1. 第一财经_专业创造价值**
+- 来源：第一财经 (SerpAPI)
+- 时间：2026-04-02
+- 摘要：第一财经官方网站，7X24小时提供股市行情、经济大势、金融政策、行业动态、专家分析等财经资讯；全网独家直播谈股论金、今日股市、公司与行业、解码财商、头脑风暴等第一财经
+- 链接：https://www.yicai.com/
+
+### 【行业板块】（10条）
+**1. Stock Market Today: Stocks Jump to Begin New Quarter After Major Indexes Have Best Day Since May; Dow Rises 400 Points - Investopedia**
+- 来源：未知 (Tavily)
+- 时间：未知
+- 摘要：Markets News, March 24, 2026: U.S. Indexes End Lower After Rallying Monday; Oil Prices Rebound From Sell-Off. Markets News, March 20, 2026: Stocks Plunge, Sending Major Indexes to Their 4th Straight W
+- 链接：https://www.investopedia.com/stock-market-today-dow-jones-s-and-p-500-04012026-11940240
+**2. U.S. equities ended higher as hopes of Iran conflict de-escalation lifted sentiment - Seeking Alpha**
+- 来源：未知 (Tavily)
+- 时间：未知
+- 摘要：Home page Seeking Alpha - Power to Investors. Search for Symbols, analysts, keywords. # U.S. equities ended higher as hopes of Iran conflict de-escalation lifted sentiment. Apr 01, 2026, 4:05 PM ETDow
+- 链接：https://seekingalpha.com/news/4571343-us-equities-advanced-as-hopes-of-iran-conflict-de-escalation-lifts-sentiment
+**3. Morning News Wrap-Up 4/1/26: Today’s Biggest Stock Market Stories! - tipranks.com**
+- 来源：未知 (Tavily)
+- 时间：未知
+- 摘要：# Morning News Wrap-Up 4/1/26: Today’s Biggest Stock Market Stories! Stocks were on the rise Wednesday alongside earnings reports, analysts updates, and other economic news. * **Advanced Micro Devices
+- 链接：https://www.tipranks.com/news/morning-news-wrap-up-4-1-26-todays-biggest-stock-market-stories
+**4. These 2 chip stocks were added to Deutsche Bank’s list of top tech picks - MarketWatch**
+- 来源：未知 (Tavily)
+- 时间：未知
+- 摘要：# These 2 chip stocks were added to Deutsche Bank’s list of top tech picks - MarketWatch. These 2 chip stocks were added to Deutsche Bank’s list of top tech picks. # These 2 chip stocks were added to 
+- 链接：https://www.marketwatch.com/story/these-2-chip-stocks-were-added-to-deutsche-banks-list-of-top-tech-picks-6a243333
+**5. TB Alternative Assets Ltd. Raises Stake in Agnico Eagle Mines Limited $AEM - MarketBeat**
+- 来源：未知 (Tavily)
+- 时间：未知
+- 摘要：As Recession Odds Climb, Defensive Sectors Continue to Outperform. The 2026 Gold Reset is unfolding in real time. HP Inc. Stock Is Historically Cheap, but Can AI Change the Story? Surprising Beneficia
+- 链接：https://www.marketbeat.com/instant-alerts/filing-tb-alternative-assets-ltd-raises-stake-in-agnico-eagle-mines-limited-aem-2026-04-02/
+
+### 【其他】（3条）
+**1. 东方财富全A(800000)_股票行情_走势图**
+- 来源：东方财富 (SerpAPI)
+- 时间：2026-04-02
+- 摘要：提供东方财富全A(800000)的行情走势、资金流向、行业概念板块排行、成份股排行、大盘分析、证券聚焦、市场总貌、股吧互动等与东方财富全A(800000)有关的信息和服务。
+- 链接：https://quote.eastmoney.com/choicezs/47.800000.html?jump_to_web=true
+**2. 股票频道- 东方财富网**
+- 来源：东方财富 (SerpAPI)
+- 时间：2026-04-02
+- 摘要：东方财富网(www.eastmoney.com)股票频道：提供24小时全球股票行情、股市直播、大盘分析、板块聚焦、焦点点评、报刊头条、热门股追踪、个股点睛、个股精华、公司资讯、 ...
+- 链接：https://stock.eastmoney.com/
+**3. 今日沪深股市最新实时行情走势**
+- 来源：Moomoo (SerpAPI)
+- 时间：2026-04-02
+- 摘要：moomoo沪深行情中心，免费提供沪深实时行情，包括今日沪深股市大盘指数最新行情，走势，及股票个股的实时报价。
+- 链接：https://www.moomoo.com/hans/quote/cn
+
+---
+## 📋 分析报告框架
+请按以下结构输出分析报告：
+### 一、全球市场概览
+### 二、核心事件解读（3-5件）
+### 三、政策动态追踪
+### 四、行业热点分析
+### 五、重点关注公司
+### 六、宏观环境判断
+### 七、风险因素提醒
+### 八、投资策略建议
+---
+**要求**：专业客观，避免预测具体点位，侧重趋势和逻辑分析，区分短期波动和长期趋势

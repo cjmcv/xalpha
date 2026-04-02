@@ -11,31 +11,62 @@ import re
 import socket
 import tempfile
 from datetime import datetime, timedelta
-from record_ext import from_positions, mulfix_pos
+from fund_positions import from_positions, mulfix_pos
 
+# "类别": {"keywords": ["基金名称里的关键词"]，"entry": "实际开始定投日期, 
+#          "target_ratio": 目标份额比例, "vol_coef": 波动系数(直接乘以加仓阈值，波动越大，触发加仓越难)"},
+# "target_ratio": 0 表示暂不持仓；二级债基和黄金只做手动加仓。
+category_config = {
+    # 美股
+    "标普500": {"keywords": ["标普500"],         "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 0, "amount_per_share": 50},  # 适中
+    "纳斯达克100": {"keywords": ["纳斯达克100"],  "vol_coef": 1.4, "entry": "2026-03-20", "target_ratio": 10, "amount_per_share": 100}, # 适中
+    "全球主动": {"keywords": ["全球"],           "vol_coef": 1.4, "entry": "2026-03-20", "target_ratio": 15, "amount_per_share": 250},  # 100 + 50
+    # A股/港股
+    "主要消费红利": {"keywords": ["消费红利"],    "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 5, "amount_per_share": 100},  # 低估
+    "中证A500": {"keywords": ["A500"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "amount_per_share": 0},
+    "恒生科技": {"keywords": ["恒生科技"],        "vol_coef": 1.6, "entry": "2026-03-20", "target_ratio": 5, "amount_per_share": 50},  # 低估
+    "港股通信息技术": {"keywords": ["港股通"],    "vol_coef": 1.8, "entry": "2026-03-20", "target_ratio": 5, "amount_per_share": 50},   # 适中
+    # 二级债基看最大回撤等指标，不定期手动加仓
+    "二级债基": {"keywords": ["债券", "瑞锦混合"], "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 50, "amount_per_share": 400}, # 250 + 100 + 50
+    "黄金": {"keywords": ["黄金", "上海金"],      "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 0, "amount_per_share": 0},
+    "其他": {"keywords": [],                     "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 0, "amount_per_share": 0},
+    "现金": {"keywords": [],                     "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 10, "amount_per_share": 0},
+}
 
 # ==================== 定投份数计算规则 ====================
-# 条件：日定投
+# 条件：每周日设定加仓份额，基于新份额日定投持续一周
 # 纳指/标普：从适中开始，低估300，适中100，高估停止。
 # 宽基/创业板指/科创50/港股信息技术/恒科/消费红利：从低估开始, 低估100，适中50，高估停止。
 RULES = {
-    "ma5": [
-        {"range": (-float('inf'), -8), "shares": 3.0},
-        {"range": (-8, -4), "shares": 2.0},
-        {"range": (-4, -2), "shares": 1.0},
-        {"range": (-2, float('inf')), "shares": 0.0},
+    # 短期均线（10日）：降权，作为辅助信号
+    "ma10": [
+        {"range": (-float('inf'), -8), "shares": 0.8},
+        {"range": (-8, -4), "shares": 0.4},
+        {"range": (-4, float('inf')), "shares": 0.0},
     ],
+    # 中期均线（20日）：提权，与周调整匹配
     "ma20": [
-        {"range": (-float('inf'), -9), "shares": 1.5},
-        {"range": (-9, -5), "shares": 0.5},
+        {"range": (-float('inf'), -10), "shares": 2.0},
+        {"range": (-10, -5), "shares": 1.0},
         {"range": (-5, float('inf')), "shares": 0.0},
     ],
+    # 长期均线（60日）：提权，捕捉熊市趋势
     "ma60": [
-        {"range": (-float('inf'), -12), "shares": 1.0},
-        {"range": (-12, -8), "shares": 0.5},
-        {"range": (-8, float('inf')), "shares": 0.0},
+        {"range": (-float('inf'), -14), "shares": 1.5},
+        {"range": (-14, -7), "shares": 0.8},
+        {"range": (-7, float('inf')), "shares": 0.0},
     ],
-    "max": 4.0,
+    # 启动后回撤：主加仓机制，不受周调整影响
+    # entry至今少于一年，按实际入场点的净值算。 
+    #      如超过一年，按一年前的净值算，避免过度加仓。
+    "since_entry": [
+        {"range": (-float('inf'), -18), "shares": 2.0},  # 极端深跌（罕见）
+        {"range": (-18, -12), "shares": 1.5},            # 深度回撤
+        {"range": (-12, -6), "shares": 1.0},             # 中度回撤
+        {"range": (-6, -3), "shares": 0.5},              # 轻度回撤
+        {"range": (-3, float('inf')), "shares": 0.0},
+    ],
+    "max": 5.0, 
 }
 
 def get_contribution(deviation, rules):
@@ -46,15 +77,38 @@ def get_contribution(deviation, rules):
             return rule["shares"]
     return 0.0
 
-def calc_shares(ma5_dev, ma20_dev, ma60_dev):
-    """计算定投份数"""
-    extra = (
-        get_contribution(ma5_dev, RULES["ma5"]) +
-        get_contribution(ma20_dev, RULES["ma20"]) +
-        get_contribution(ma60_dev, RULES["ma60"])
-    )
-    extra = min(extra, RULES["max"])
-    return extra
+def scale_rules(vol_coef):
+    """根据vol_coef缩放RULES的range阈值"""
+    scaled = {}
+    for key in ["ma10", "ma20", "ma60", "since_entry"]:
+        scaled[key] = []
+        for rule in RULES[key]:
+            low, high = rule["range"]
+            # -inf 和 +inf 保持不变
+            if low == float('inf'):
+                new_low = float('inf')
+            elif low == -float('inf'):
+                new_low = -float('inf')
+            else:
+                new_low = low * vol_coef
+            if high == float('inf'):
+                new_high = float('inf')
+            elif high == -float('inf'):
+                new_high = -float('inf')
+            else:
+                new_high = high * vol_coef
+            scaled[key].append({"range": (new_low, new_high), "shares": rule["shares"]})
+    return scaled
+
+def calc_shares(ma10_dev, ma20_dev, ma60_dev, since_entry_dev=0, vol_coef=1.0):
+    """计算定投份数，vol_coef为阈值系数，返回(total, ma10, ma20, ma60, since_entry)"""
+    scaled = scale_rules(vol_coef)
+    ma10_c = get_contribution(ma10_dev, scaled["ma10"])
+    ma20_c = get_contribution(ma20_dev, scaled["ma20"])
+    ma60_c = get_contribution(ma60_dev, scaled["ma60"])
+    since_c = get_contribution(since_entry_dev, scaled["since_entry"])
+    total = min(ma10_c + ma20_c + ma60_c + since_c, RULES["max"])
+    return total, ma10_c, ma20_c, ma60_c, since_c
 
 
 # ==================== 公共工具函数 ====================
@@ -107,14 +161,13 @@ def get_fund_data(fund_code):
 
 
 def get_fund_positions_data():
-    read = from_positions("./tests/CMB_fund_positions.csv", skiprows=0)
+    read = from_positions("./CMB/fund_positions.csv", skiprows=0)
     sysopen = mulfix_pos(status=read)
     return sysopen, sysopen.combsummary()
 
 
 def get_fund_categories():
     sysopen, summary_df = get_fund_positions_data()
-    category_config = sysopen.category_config
     fund_categories = {}
     for _, row in summary_df.iterrows():
         fund_name = row['简称']
@@ -132,7 +185,7 @@ def get_fund_categories():
 
 def parse_cmb_trade_csv():
     """解析招商银行交易记录CSV"""
-    path = "./tests/CMB_trade_records.csv"
+    path = "./CMB/trade_records.csv"
     for enc in ['gb2312', 'gbk', 'utf-8']:
         try:
             with open(path, 'r', encoding=enc) as f:
@@ -160,7 +213,6 @@ def parse_cmb_trade_csv():
 def get_trade_category(code):
     """根据基金代码获取分类"""
     sysopen, summary_df = get_fund_positions_data()
-    category_config = sysopen.category_config
     code_to_name = dict(zip(summary_df['产品代码'].astype(str), summary_df['简称']))
     name = code_to_name.get(code, "未知")
     for cat_name, config in category_config.items():
@@ -172,7 +224,7 @@ def get_trade_category(code):
 # ==================== 图表创建 ====================
 def create_fund_pos_ratio_chart():
     sysopen, summary_df = get_fund_positions_data()
-    chart = sysopen.v_positions(rendered=False)
+    chart = sysopen.v_positions(category_config, rendered=False)
 
     # 左侧标签颜色改成白色
     if "legend" in chart.options and len(chart.options["legend"]) > 0:
@@ -354,7 +406,7 @@ def create_erp_chart():
     )
 
 
-def create_fund_trend_chart(fund_code="020989"):
+def create_fund_trend_chart(fund_code="019547"):
     """创建基金走势图（5年数据）"""
     try:
         df = ak.fund_open_fund_info_em(symbol=fund_code, indicator="单位净值走势")
@@ -422,7 +474,7 @@ def fund_pos_change_stat():
 
         for cat_name, funds in fund_categories.items():
             funds_to_show = funds if cat_name == "二级债基" else funds[:1]
-            for fund in funds_to_show:
+            for idx, fund in enumerate(funds_to_show):
                 try:
                     df = get_fund_data(fund["code"])
                     if df.empty or len(df) < 3:
@@ -458,6 +510,14 @@ def fund_pos_change_stat():
                         nav_5_avg = None
                         change_5_avg = None
 
+                    # 计算距10日均值（当前净值与过去10个交易日均值百分比差值）
+                    if len(df) >= 10:
+                        nav_10_avg = df.iloc[1:11]['单位净值'].mean()
+                        change_10_avg = (latest_nav - nav_10_avg) / nav_10_avg * 100
+                    else:
+                        nav_10_avg = None
+                        change_10_avg = None
+
                     df_asc = df.sort_values('净值日期', ascending=True).reset_index(drop=True)
                     one_year_data = df_asc[df_asc['净值日期'] >= (df_asc.iloc[-1]['净值日期'] - pd.Timedelta(days=365))]
                     if len(one_year_data) > 0:
@@ -470,45 +530,88 @@ def fund_pos_change_stat():
 
                     one_day_date = df.iloc[0]['净值日期'].strftime('%m-%d') if len(df) > 0 else ""
 
-                    # 计算各涨跌幅 scenario 下的定投份数
-                    # hypo_nav 作为明天的净值，需要重新计算 ma5/ma20/ma60
-                    scenarios = {}
-                    for pct in [4, 2, 0, -2, -4]:
-                        change_rate = pct / 100.0
-                        hypo_nav = latest_nav * (1 + change_rate)
-                        # ma5: hypo_nav + 之前4天 (df.iloc[0:4])
-                        if len(df) >= 5:
-                            hypo_ma5 = (hypo_nav + df.iloc[0:4]['单位净值'].sum()) / 5
-                            hypo_ma5_dev = (hypo_nav - hypo_ma5) / hypo_ma5 * 100
+                    # 获取该分类的vol_coef用于计算加仓份数
+                    vol_coef = category_config.get(cat_name, {}).get("vol_coef", 1.0)
+                    entry_date_str = category_config.get(cat_name, {}).get("entry", None)
+
+                    # 计算距入场点涨跌（窗口一年）
+                    if entry_date_str:
+                        entry_date = pd.to_datetime(entry_date_str).normalize()
+                        today_start = pd.Timestamp.today().normalize()
+                        one_year_ago = today_start - pd.DateOffset(years=1)
+                        df_asc_for_entry = df.sort_values('净值日期', ascending=True).copy()
+                        df_asc_for_entry['净值日期'] = pd.to_datetime(df_asc_for_entry['净值日期']).dt.normalize()
+                        entry_data = df_asc_for_entry[df_asc_for_entry['净值日期'] >= entry_date]
+                        if len(entry_data) > 0:
+                            entry_nav = entry_data.iloc[0]['单位净值']
+                            entry_nav_date = entry_data.iloc[0]['净值日期'].strftime('%m-%d')
+                            # 入场至今是否超过一年：比较入场日期和 today-1年
+                            if entry_date <= one_year_ago:
+                                # 超过一年：找今天往前一年那个日期的净值
+                                window_data = df_asc_for_entry[df_asc_for_entry['净值日期'] >= one_year_ago]
+                                if len(window_data) > 0:
+                                    window_nav = window_data.iloc[0]['单位净值']
+                                    since_entry_dev = (latest_nav - window_nav) / window_nav * 100
+                                else:
+                                    # 找不到用入场净值
+                                    ref_nav = entry_nav
+                                    since_entry_dev = (latest_nav - ref_nav) / ref_nav * 100
+                                ref_date_str = None
+                            else:
+                                # 不足一年：用入场时净值
+                                ref_nav = entry_nav
+                                ref_date_str = entry_nav_date
+                                since_entry_dev = (latest_nav - ref_nav) / ref_nav * 100
                         else:
-                            hypo_ma5_dev = 0
-                        # ma20: hypo_nav + 之前19天 (df.iloc[0:19])
-                        if len(df) >= 20:
-                            hypo_ma20 = (hypo_nav + df.iloc[0:19]['单位净值'].sum()) / 20
-                            hypo_ma20_dev = (hypo_nav - hypo_ma20) / hypo_ma20 * 100
-                        else:
-                            hypo_ma20_dev = 0
-                        # ma60: hypo_nav + 之前59天 (df.iloc[0:59])
-                        if len(df) >= 60:
-                            hypo_ma60 = (hypo_nav + df.iloc[0:59]['单位净值'].sum()) / 60
-                            hypo_ma60_dev = (hypo_nav - hypo_ma60) / hypo_ma60 * 100
-                        else:
-                            hypo_ma60_dev = 0
-                        scenarios[pct] = calc_shares(hypo_ma5_dev, hypo_ma20_dev, hypo_ma60_dev)
+                            entry_nav = None
+                            entry_nav_date = None
+                            since_entry_dev = 0
+                            ref_date_str = None
+                    else:
+                        entry_nav = None
+                        entry_nav_date = None
+                        since_entry_dev = 0
+                        ref_date_str = None
+
+                    # 计算定投份额（基于真实偏离度），vol_coef=99不计算
+                    # 但二级债基第一个基金直接填入amount_per_share
+                    is_bond_first = (vol_coef >= 99 and cat_name == "二级债基" and idx == 0)
+                    if is_bond_first:
+                        shares = 0
+                        ma10_c = ma20_c = ma60_c = since_c = 0
+                    elif vol_coef >= 99:
+                        shares = None
+                        ma10_c = ma20_c = ma60_c = since_c = 0
+                    else:
+                        shares, ma10_c, ma20_c, ma60_c, since_c = calc_shares(
+                            change_10_avg if change_10_avg is not None else 0,
+                            change_20_avg if change_20_avg is not None else 0,
+                            change_60_avg if change_60_avg is not None else 0,
+                            since_entry_dev, vol_coef
+                        )
 
                     table_data.append({"category": cat_name, "code": fund["code"], "name": fund["name"],
                                        "drawdown": drawdown, "peak_date": peak_date, "one_day_date": one_day_date,
-                                       "change_1d": change_1d, "change_5_avg": change_5_avg, "change_20_avg": change_20_avg, "change_60_avg": change_60_avg,
-                                       "scenarios": scenarios})
+                                       "change_1d": change_1d, "change_5_avg": change_5_avg, "change_10_avg": change_10_avg,
+                                       "change_20_avg": change_20_avg, "change_60_avg": change_60_avg,
+                                       "since_entry_dev": since_entry_dev, "ref_date_str": ref_date_str,
+                                       "shares": shares, "ma10_c": ma10_c, "ma20_c": ma20_c, "ma60_c": ma60_c, "since_c": since_c,
+                                       "amount_per_share": category_config.get(cat_name, {}).get("amount_per_share", 0),
+                                       "is_bond_first": is_bond_first})
                 except:
                     continue
 
         if not table_data:
             return "❌ 无法获取任何基金数据"
 
-        result = "📊 **持仓分类基金近期涨跌幅统计**\n\n"
-        result += "| 分类 | 基金代码 | 基金简称 | 距一年高点 | 距60日均值 | 距20日均值 | 距5日均值 | 最新涨跌 | +4% | +2% | 0% | -2% | -4% |\n"
-        result += "|------|-------|-------|----------------|-------------|-------------|-------------|------------|-----|-----|-----|-----|-----|\n"
+        result = "| 分类 | 基金代码 | 基金简称 | 定投金额 | 加仓份额 | 最新涨跌 | 距MA5 | <span style='color: #87CEEB;'>距MA10</span> | <span style='color: #87CEEB;'>距MA20</span> | <span style='color: #87CEEB;'>距MA60</span> | <span style='color: #87CEEB;'>距入场点(窗口一年)</span> | 距一年高点 |\n"
+        result += "|------|-------|-------|------------|------------|------------|--------|--------|--------|--------|-------------------|----------------|\n"
+
+        # 计算日累计总金额（用于占比计算）
+        total_daily = sum(
+            ((item["shares"] + 1) * item["amount_per_share"]) if item["shares"] is not None else item["amount_per_share"]
+            for item in table_data if item["shares"] is not None or item.get("is_bond_first", False)
+        )
 
         for item in table_data:
             if item["drawdown"] is None:
@@ -517,16 +620,38 @@ def fund_pos_change_stat():
                 dd_str = format_percentage(-item["drawdown"], color_mode=True) + f' <span style="color: gray;">({item["peak_date"]})</span>'
             change_60_str = format_percentage(item["change_60_avg"], color_mode=True) if item["change_60_avg"] is not None else "--"
             change_20_str = format_percentage(item["change_20_avg"], color_mode=True) if item["change_20_avg"] is not None else "--"
+            change_10_str = format_percentage(item["change_10_avg"], color_mode=True) if item["change_10_avg"] is not None else "--"
             change_5_str = format_percentage(item["change_5_avg"], color_mode=True) if item["change_5_avg"] is not None else "--"
             change_1d_str = format_percentage(item["change_1d"], color_mode=True) if item["change_1d"] is not None else "--"
             change_1d_full = change_1d_str + f' <span style="color: gray;">({item["one_day_date"]})</span>' if item["one_day_date"] else change_1d_str
-            s = item["scenarios"]
-            # 加仓份数大于0显示金色
-            def fmt_share(v):
-                if v > 0:
-                    return f'<span style="color: gold; font-weight: bold;">{v:.1f}</span>'
-                return f'{v:.1f}'
-            result += f"| {item['category']} | {item['code']} | {item['name']} | {dd_str} | {change_60_str} | {change_20_str} | {change_5_str} | {change_1d_full} | {fmt_share(s[4])} | {fmt_share(s[2])} | {fmt_share(s[0])} | {fmt_share(s[-2])} | {fmt_share(s[-4])} |\n"
+            since_entry_str = format_percentage(item["since_entry_dev"], color_mode=True) if item["since_entry_dev"] is not None else "--"
+            if item["ref_date_str"]:
+                since_entry_str += f' <span style="color: gray;">({item["ref_date_str"]})</span>'
+            shares = item["shares"]
+            if shares is None:
+                shares_str = "---"
+                amount_str = "---"
+            elif item.get("is_bond_first", False):
+                shares_str = "---"
+                amt = item["amount_per_share"]
+                pct = amt / total_daily * 100 if total_daily > 0 else 0
+                amount_str = f'{amt:.0f} ({pct:.1f}%)'
+            else:
+                if shares > 0:
+                    shares_str = f'<span style="color: gold; font-weight: bold;">{shares:.1f}={item["ma10_c"]:.1f}+{item["ma20_c"]:.1f}+{item["ma60_c"]:.1f}+{item["since_c"]:.1f}</span>'
+                else:
+                    shares_str = f'{shares:.1f}={item["ma10_c"]:.1f}+{item["ma20_c"]:.1f}+{item["ma60_c"]:.1f}+{item["since_c"]:.1f}'
+                amt = (shares + 1) * item["amount_per_share"]
+                pct = amt / total_daily * 100 if total_daily > 0 else 0
+                amount_str = f'{amt:.0f} ({pct:.1f}%)'
+            result += f"| {item['category']} | {item['code']} | {item['name']} | {amount_str} | {shares_str} | {change_1d_full} | {change_5_str} | {change_10_str} | {change_20_str} | {change_60_str} | {since_entry_str} | {dd_str} |\n"
+
+        weekly = total_daily * 5
+        monthly = total_daily * 22
+        result += f"\n**📊 下周定投总结**\n\n"
+        result += f"- **日累计定投金额**: {total_daily:.0f} 元\n"
+        result += f"- **周累计定投金额**: {weekly:.0f} 元\n"
+        result += f"- **预估月定投金额**: {monthly:.0f} 元\n"
         return result
     except Exception as e:
         return f"❌ 获取基金数据失败: {str(e)}"
@@ -535,7 +660,7 @@ def fund_pos_change_stat():
 def get_fund_detail(fund_code=None):
     """指定基金详情"""
     try:
-        fund_code = fund_code or "020989"
+        fund_code = fund_code or "019547"
         fund_categories = get_fund_categories()
 
         target_fund = None
@@ -595,17 +720,32 @@ def get_fund_detail(fund_code=None):
         return f"❌ 查询失败: {str(e)}"
 
 
-def func_3():
-    """网络信息"""
+def daily_financial_report(param=None):
+    """当日财经新闻报告"""
     try:
-        hostname = socket.gethostname()
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        return f"🌐 **网络信息**\n\n主机名: {hostname}\nIP地址: {ip}\n端口: 7860\n访问地址: http://{ip}:7860"
+        from financial_news import FinancialNewsFetcher
+        from llm_news_analyzer import LLMNewsAnalyzer
+        cache_dir = ".cache"
+
+        # 如果指定了日期，尝试读取对应缓存
+        if param and len(param) == 8 and param.isdigit():
+            date_str = param
+            cache_path = os.path.join(cache_dir, f"analysis_report_{date_str}.txt")
+            if os.path.exists(cache_path):
+                with open(cache_path, 'r', encoding='utf-8') as f:
+                    report = f.read()
+                return f"📰 **财经新闻报告 ({date_str})**\n\n{report}"
+            else:
+                return f"❌ 未找到 {date_str} 的缓存报告"
+
+        # 默认生成当日报告
+        news_fetcher = FinancialNewsFetcher()
+        news_prompt = news_fetcher.run()
+        llm_analyzer = LLMNewsAnalyzer()
+        report = llm_analyzer.analyze(news_prompt)
+        return f"📰 **当日财经新闻报告**\n\n{report}"
     except Exception as e:
-        return f"❌ 获取网络信息失败: {str(e)}"
+        return f"❌ 生成新闻报告失败: {str(e)}"
 
 
 def func_4():
@@ -671,7 +811,7 @@ def func_4():
 
 def func_5():
     """网络信息"""
-    return func_3()
+    return daily_financial_report()
 
 
 def func_6():
@@ -683,15 +823,15 @@ def func_6():
 # 功能映射
 FUNCTIONS_MAP = {
     "1": {"func": fund_pos_detail, "desc": "持仓组合摘要", "emoji": "📊", "has_param": False},
-    "2": {"func": fund_pos_change_stat, "desc": "持仓基金涨跌统计", "emoji": "📈", "has_param": False},
-    "3": {"func": func_3, "desc": "查阅基金(如020989)", "emoji": "🎲", "has_param": True, "param_desc": "基金代码"},
+    "2": {"func": fund_pos_change_stat, "desc": "持仓基金加仓建议", "emoji": "📈", "has_param": False},
+    "3": {"func": daily_financial_report, "desc": "当日财经报告(3 20260403选择历史报告)", "emoji": "🎲", "has_param": True, "param_desc": "基金代码"},
     "4": {"func": func_4, "desc": "系统信息", "emoji": "💻", "has_param": False},
     "5": {"func": func_5, "desc": "网络信息", "emoji": "🌐", "has_param": False},
     "6": {"func": func_6, "desc": "数据示例", "emoji": "📋", "has_param": False},
 }
 
 
-def build_charts(selected_types, fund_code="020989"):
+def build_charts(selected_types, fund_code="019547"):
     charts_map = {
         "持仓分布": create_fund_pos_ratio_chart,
         "申购记录": create_trade_records_charts,
@@ -722,7 +862,7 @@ with gr.Blocks(title="基金数据看板", theme=gr.themes.Soft()) as demo:
             chart_2 = gr.Checkbox(label="申购记录", value=False)
             chart_3 = gr.Checkbox(label="股债利差", value=False)
             chart_4 = gr.Checkbox(label="基金详情", value=False)
-            fund_code_input = gr.Textbox(label="基金代码", value="020989", lines=1)
+            fund_code_input = gr.Textbox(label="基金代码", value="019547", lines=1)
 
             def combine_charts(c1, c2, c3, c4):
                 selected = []
@@ -778,7 +918,7 @@ with gr.Blocks(title="基金数据看板", theme=gr.themes.Soft()) as demo:
         if first_part.isdigit() and first_part in FUNCTIONS_MAP:
             info = FUNCTIONS_MAP[first_part]
             if info.get("has_param", False):
-                param = parts[1] if len(parts) >= 2 else "020989"
+                param = parts[1] if len(parts) >= 2 else "019547"
                 response = f"{info['emoji']} **{info['desc']} ({param})**\n\n{info['func'](param)}"
                 if param.isdigit() and len(param) == 6:
                     new_fund_code = param

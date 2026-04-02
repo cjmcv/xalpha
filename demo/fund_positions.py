@@ -87,21 +87,7 @@ class mulfix_pos:
         self.pos = status
         self.cash = int(round(status.account_total, 0)) if status.account_total > 0 else 0
         self.df = self._make_summary()
-        # ===================== 分类和目标占比配置（统一管理） =====================
-        self.category_config = {
-            "纳斯达克100": {"keywords": ["纳斯达克100"], "target_ratio": 10},
-            "标普500": {"keywords": ["标普500"], "target_ratio": 0},
-            "全球主动": {"keywords": ["全球"], "target_ratio": 15},
-            "恒生科技": {"keywords": ["恒生科技"], "target_ratio": 5},
-            "港股通信息技术": {"keywords": ["港股通"], "target_ratio": 5},
-            "中证A500": {"keywords": ["A500"], "target_ratio": 0},
-            "主要消费红利": {"keywords": ["消费红利"], "target_ratio": 5},
-            "黄金": {"keywords": ["黄金", "上海金"], "target_ratio": 0},
-            "二级债基": {"keywords": ["债券", "瑞锦混合"], "target_ratio": 50},
-            "其他": {"keywords": [], "target_ratio": 0},
-            "现金": {"keywords": [], "target_ratio": 10},  # 现金的目标占比
-        }
-        
+
     def _make_summary(self):
         pos = self.pos.positions.copy()
         data = []
@@ -144,7 +130,7 @@ class mulfix_pos:
     def combsummary(self):
         return self.df
 
-    def v_positions(self, rendered=True):
+    def v_positions(self, category_config, rendered=True):
         df = self.df.copy()
         fund_total = int(round(self.total_market_value if not np.isnan(self.total_market_value) else 0, 0))
         cash = self.cash
@@ -152,7 +138,7 @@ class mulfix_pos:
         
         # ===================== 归类规则 =====================
         def classify(name):
-            for category, config in self.category_config.items():
+            for category, config in category_config.items():
                 for keyword in config["keywords"]:
                     if keyword in name:
                         return category
@@ -161,7 +147,7 @@ class mulfix_pos:
         # 生成分类
         df["分类"] = df["简称"].apply(classify)
         # 根据配置获取目标占比
-        df["目标占比"] = df["分类"].apply(lambda x: self.category_config.get(x, {}).get("target_ratio", 0))
+        df["目标占比"] = df["分类"].apply(lambda x: category_config.get(x, {}).get("target_ratio", 0))
 
         # 汇总
         outer_df = df.groupby("分类").agg({
@@ -171,7 +157,7 @@ class mulfix_pos:
 
         # 加入现金
         if cash > 0:
-            outer_df.loc[len(outer_df)] = {"分类": "现金", "参考市值": cash, "目标占比": self.category_config["现金"]["target_ratio"]}
+            outer_df.loc[len(outer_df)] = {"分类": "现金", "参考市值": cash, "目标占比": category_config["现金"]["target_ratio"]}
 
         total_value = outer_df["参考市值"].sum()
         
