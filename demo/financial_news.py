@@ -19,7 +19,11 @@ class FinancialNewsFetcher:
         "政策动态": ["政策", "证监会", "央行", "国务院", "发改委", "财政部", "监管", "降准", "降息"],
         "行业板块": ["新能源", "AI", "人工智能", "半导体", "芯片", "医药", "消费", "汽车", "房地产", "科技股"],
         "宏观经济": ["宏观", "GDP", "CPI", "PMI", "经济数据", "汇率", "利率", "通胀", "就业"],
-        "公司要闻": ["财报", "盈利", "业绩", "营收", "收购", "合并", "发布", "CEO"]
+        "公司要闻": ["财报", "盈利", "业绩", "营收", "收购", "合并", "发布", "CEO"],
+        "投资巨头": ["巴菲特", "芒格", "索罗斯", "达利欧", "西蒙斯", "木头姐", "段永平", "张磊", "沈南鹏",
+                    "高瓴", "红杉", "软银", "孙正义", "伯克希尔", "桥水", "贝莱德", "Vanguard", "摩根大通", "高盛",
+                    "摩根士丹利", "瑞银", "花旗", "德银", "汇丰", "老虎基金", "Citadel", "景林", "幻方", "明汯",
+                    "社保", "公募", "私募", "QFII", "北向资金", "机构持仓", "建仓", "加仓", "减仓", "清仓", "持仓", "增持", "减持"]
     }
 
     def __init__(
@@ -82,26 +86,43 @@ class FinancialNewsFetcher:
             print(f"Tavily 获取失败: {e}")
             return []
 
-    def fetch_chinese(self, num: int = 20) -> list[dict]:
-        """获取SerpAPI中文财经新闻"""
-        try:
-            params = {"q": "财经新闻 今日热点 A股 政策", "api_key": self.serpapi_key,
-                      "hl": "zh-CN", "gl": "cn", "num": num}
-            results = GoogleSearch(params).get_dict().get("organic_results", [])
-            if len(results) < 5:
-                params["q"] = "A股 今日行情 财经要闻 政策解读"
+    def fetch_chinese(self, num: int = 30) -> list[dict]:
+        """获取SerpAPI中文财经新闻（24小时内）"""
+        queries = [
+            "财经新闻 今日热点 A股",
+            "A股 今日行情 大盘",
+            "股市 政策面 最新消息",
+            "基金 重仓 调仓",
+            "北向资金 流向",
+            "美股 纳斯达克 道指",
+            "港股 恒生指数",
+            "宏观经济 央行 政策",
+        ]
+        all_results = []
+        for q in queries:
+            try:
+                params = {"q": q, "api_key": self.serpapi_key,
+                          "hl": "zh-CN", "gl": "cn", "num": num, "qdr": "d"}
                 results = GoogleSearch(params).get_dict().get("organic_results", [])
-            return [{
-                "title": r.get("title", ""),
-                "snippet": r.get("snippet", ""),
-                "source": r.get("source", "未知"),
-                "date": r.get("date", datetime.now().strftime("%Y-%m-%d")),
-                "link": r.get("link", ""),
-                "engine": "SerpAPI"
-            } for r in results]
-        except Exception as e:
-            print(f"SerpAPI 获取失败: {e}")
-            return []
+                all_results.extend(results)
+            except Exception as e:
+                print(f"SerpAPI 查询「{q}」失败: {e}")
+                continue
+        # 去重
+        seen, unique_results = set(), []
+        for r in all_results:
+            key = r.get("title", "")[:50]
+            if key and key not in seen:
+                seen.add(key)
+                unique_results.append(r)
+        return [{
+            "title": r.get("title", ""),
+            "snippet": r.get("snippet", ""),
+            "source": r.get("source", "未知"),
+            "date": r.get("date", datetime.now().strftime("%Y-%m-%d")),
+            "link": r.get("link", ""),
+            "engine": "SerpAPI"
+        } for r in unique_results[:50]]
 
     def fetch_all(self, tavily_days: int = 1, tavily_max: int = 10, serpapi_num: int = 20) -> dict:
         """获取并合并所有新闻，自动分类去重"""
@@ -149,20 +170,20 @@ class FinancialNewsFetcher:
                 if item.get("link"):
                     parts.append(f"- 链接：{item['link']}\n")
 
-        parts.append("""
+        parts.append(f"""
 ---
 ## 📋 分析报告框架
-请按以下结构输出分析报告：
-### 一、全球市场概览
-### 二、核心事件解读（3-5件）
-### 三、政策动态追踪
-### 四、行业热点分析
-### 五、重点关注公司
+请按以下结构精简输出分析报告，每部分不超过3-5句话，事件需标注具体日期和时间（精确到分钟）：
+### 一、全球市场概览（一句话总结）
+### 二、投资巨头动向（追踪观点与操作）
+### 三、核心事件解读（一句一事件）
+### 四、政策动态追踪
+### 五、行业热点
 ### 六、宏观环境判断
-### 七、风险因素提醒
+### 七、风险因素
 ### 八、投资策略建议
 ---
-**要求**：专业客观，避免预测具体点位，侧重趋势和逻辑分析，区分短期波动和长期趋势
+**要求**：极简风格，字少信息多，避免废话，每条信息需有实质内容；投资巨头分析需结合具体日期和仓位变化
 """)
         return "".join(parts)
 

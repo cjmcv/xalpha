@@ -1,108 +1,231 @@
-**报告生成时间**：2026-04-03 01:21:42
+**报告生成时间**：2026-04-03 10:02:56
 ## 📊 新闻来源统计
 | 来源 | 数量 |
 |------|------|
 | 国际财经 (Tavily) | 10 条 |
-| 国内财经 (SerpAPI) | 10 条 |
-| **合计** | **20 条** |
+| 国内财经 (SerpAPI) | 50 条 |
+| **合计** | **60 条** |
 ---
 ## 📰 分类新闻汇总
 
-### 【美股市场】（3条）
-**1. AASTOCKS 財經新聞- 重點新聞**
-- 来源：AASTOCKS.com (SerpAPI)
+### 【美股市场】（9条）
+**1. 财经首页- 东方财富网**
+- 来源：东方财富 (SerpAPI)
 - 时间：2026-04-03
-- 摘要：AASTOCKS 財經新聞- 重點新聞 · 美股假前部署！ 港美科技股策略？ · 戰事加速惡化？！必備黃金抗通脹？ · Frederick分析：長假前輕倉? · 特朗普宣布已勝利股市即跌 · 港股反彈未見頂？
-- 链接：http://www.aastocks.com/tc/stocks/news/aafn
-**2. 股市实时消息滚动播报**
-- 来源：证券时报 (SerpAPI)
-- 时间：2026-04-03
-- 摘要：深夜，集体拉升！超11万人爆仓！特朗普：将很快撤出伊朗战事！局势将走向何方？ 市场风险偏好回升！北京时间周三晚间，美股市场延续涨势。截至记者发稿，纳指涨超1%。芯片股集体 ...
-- 链接：https://www.stcn.com/article/list/gd.html
-**3. 今日股市最新消息_股票新闻头条**
+- 摘要：全球市场：美股三大指数涨跌不一卫星通信概念股大涨国际油价涨近12% 【全球市场】1、道指跌0.13%，纳指涨0.18%，标普500指数涨0.11%。2、国际油价大涨近12%。3、英特尔涨近5%， ...
+- 链接：https://finance.eastmoney.com/
+**2. 今日股市最新消息_股票新闻头条**
 - 来源：英为财情 Investing.com (SerpAPI)
 - 时间：2026-04-03
 - 摘要：英为财情股市新闻频道提供7×24小时股市新闻快讯，包括今天股市最新消息新闻，热门股票新闻，沪深股市、港股、欧洲股市、美股等国内和世界今日股市新闻头条。
 - 链接：https://cn.investing.com/news/stock-market-news
-
-### 【A股市场】（1条）
-**1. 财经首页- 东方财富网**
-- 来源：东方财富 (SerpAPI)
-- 时间：2026-04-03
-- 摘要：3月A股新开460万户同环比各创高增谁正进场逆势布局？ 19:42. 工信部首提“算力银行”“算力超市” 降低中小企业用算门槛.
-- 链接：https://finance.eastmoney.com/
-
-### 【政策动态】（2条）
-**1. AASTOCKS 财经新闻- 国家政策**
-- 来源：AASTOCKS.com (SerpAPI)
-- 时间：2026-04-03
-- 摘要：AI股疑虑再起展望2026年必备股份？ 滙控创历史新高！2026继续有睇头？ 年尾部署：减仓还是加注？ 小米、商汤下挫！年尾大执仓！ 谭神2025总结！2026入市时机？ 2026年开局展望低吸 ...
-- 链接：https://wdatacn.aastocks.com/sc/stocks/news/aafn/china-policy
-**2. 今天最新全球财经资讯**
+**3. 全球财经新闻最新消息**
 - 来源：英为财情 Investing.com (SerpAPI)
 - 时间：2026-04-03
-- 摘要：英为财情财经资讯频道提供每日经济资讯，包括今天最新的经济大事、金融事件、外汇资讯、央行动向及期货、股指、和经济指标等热门财经资讯报道。
-- 链接：https://cn.investing.com/news
+- 摘要：最新财经资讯 · 美股异动| 光通信板块普涨Applied Optoelectronics(AAOI.US)大涨近18% · 美股异动| 通用汽车(GM.US)跌3% 一季度美国市场销量同比下降约10% · NASA发射首个载人 ...
+- 链接：https://cn.investing.com/news/latest-news
+**4. 股市实时消息滚动播报**
+- 来源：证券时报 (SerpAPI)
+- 时间：2026-04-03
+- 摘要：今晚，美股三大指数集体低开后，迅速拉升，一度全线翻红，道指、标普500指数盘初最大跌幅超1%，纳指此前一度大跌超2%。消息面上，伊朗方面称，与阿曼起草霍尔木兹海峡通行的协议。
+- 链接：https://www.stcn.com/article/list/gd.html
+**5. 美股三大指数：道琼斯指数，纳斯达克指数，标普500指数**
+- 来源：FX168财经 (SerpAPI)
+- 时间：2018年9月13日
+- 摘要：熟悉美国股市的都知道，道琼斯指数、纳斯达克指数、标普500指数被称为美股三大股指。而对于中国股市，大家关注更多的则是上证指数、深圳成分指数，沪 ...
+- 链接：https://old.fx168news.com/about/1809/2668476.shtml
 
-### 【行业板块】（10条）
-**1. U.S. equities ended higher as hopes of Iran conflict de-escalation lifted sentiment - Seeking Alpha**
+### 【A股市场】（9条）
+**1. 大盘分析_ 东方财富网 - 股票**
+- 来源：东方财富 (SerpAPI)
+- 时间：2026-04-03
+- 摘要：沪指跌0.74% 创业板指跌2.31% 石油石化板块逆市走强. 【收盘播报】沪指跌0.74%，深证成指跌1.60%，创业板指跌2.31%。成交额不足1.9万亿，石油石化、医药商业、能源金属 ...
+- 链接：https://stock.eastmoney.com/a/cdpfx.html
+**2. 今日沪深股市最新实时行情走势**
+- 来源：富途牛牛 (SerpAPI)
+- 时间：2026-04-03
+- 摘要：上证指数. 3919.29. -29.27-0.74% ; 深证成指. 13486.94. -219.58-1.60% ; 创业板指. 3172.65. -74.87-2.31%.
+- 链接：https://www.futunn.com/quote/cn
+**3. 今日（9月30日）A股大盘指数最新行情走势 - 外汇投资**
+- 来源：lujiaocj.com (SerpAPI)
+- 时间：2026-04-03
+- 摘要：9月30日收盘，A股主要指数全线收涨，盘面上看，今日沪深大盘共计有5336只个股上涨，8只个股下跌，两市成交金额合计达25930.37亿元。
+- 链接：https://www.lujiaocj.com/whrm/394032.html
+**4. a股今日大盘股市行情(a股今日大盘股市行情走势) - 期货直播室**
+- 来源：jumanxin.com (SerpAPI)
+- 时间：2024年2月6日
+- 摘要：今天，a股大盘股市行情再度呈现出了震荡的特点。尽管市场整体表现不尽如人意，但仍有一些个股涨幅较大，给投资者带来了一些喜悦。
+- 链接：https://www.jumanxin.com/kcb/16415.html
+**5. 【机构策略】市场调整后中国股市正出现重要底部与击球点**
+- 来源：证券时报 (SerpAPI)
+- 时间：4天前
+- 摘要：中期来看，在财政政策及货币政策“双宽松”基调延续、居民储蓄资产持续入市、“反内卷”改善上市公司业绩、全球AI科技仍持续突破等共同驱动下，本轮A股行情基础 ...
+- 链接：https://stcn.com/article/detail/3709286.html
+
+### 【港股中概】（8条）
+**1. 恒生指数(HSI)最新价格_行情_走势图**
+- 来源：东方财富 (SerpAPI)
+- 时间：2026-04-03
+- 摘要：恒生指数. HSI. 电脑版. -. --. 今开-. 最高-. 最低-. 总量-. 金额-. 振幅-. 昨收-. 股吧; 成分股. 全部; 热门.
+- 链接：https://quote.eastmoney.com/unify/r/100.HSI
+**2. 恒生指数（hkHSI）股票价格_股票实时行情_走势图**
+- 来源：新浪网 (SerpAPI)
+- 时间：2026-04-03
+- 摘要：恒生指数25294.031 +2.041%HSI. APP下载. * 港股行情延时15分钟，若需查看实时行情，请点击下方打开APP. 25294.031. +505.890 +2.041%. 早盘中 04-01 16:09. 今开: 25357.230.
+- 链接：https://quotes.sina.cn/hk/company/quotes/view/hsi
+**3. 恒生指数 - 腾讯证券 - QQ**
+- 来源：QQ.com (SerpAPI)
+- 时间：2026-04-03
+- 摘要：没有此网页的信息。
+- 链接：https://gu.qq.com/hkHSI
+**4. 恒生指數(^HSI) 圖表、數據和新聞**
+- 来源：Yahoo 財經 (SerpAPI)
+- 时间：2026-04-03
+- 摘要：884.85% · 前收市價 24,788.14 · 開市 25,357.23 · 成交量 0 · 今日波幅 25,203.69 - 25,429.76 · 52 週波幅 19,260.21 - 28,056.10 · 平均成交量 3,378,676,666 ...
+- 链接：https://hk.finance.yahoo.com/quote/%5EHSI/
+**5. 恒生指数(HKHSI)股票股价_行情**
+- 来源：雪球 (SerpAPI)
+- 时间：2026-04-03
+- 摘要：雪球为您提供恒生指数(HKHSI)股票股价,实时行情,热门讨论,最新资讯,财务指标分析等与恒生指数(HKHSI)相关的信息与服务.
+- 链接：https://xueqiu.com/S/HKHSI
+
+### 【政策动态】（5条）
+**1. 操盘必读：影响股市利好或利空消息_2026年4月1日**
+- 来源：新浪财经 (SerpAPI)
+- 时间：2026-04-03
+- 摘要：... 政策委员会召开2026年第一季度例会。会议提出，建议发挥增量政策和存量政策集成效应，综合运用多种工具，加强货币政策调控。会议还提出，要继续实施适度宽松的货币政策 ...
+- 链接：http://finance.sina.com.cn/stock/cpbd/index.html
+**2. 操盘必读：影响股市利好或利空消息_2026年4月2日_财经新闻**
+- 来源：手机新浪网 (SerpAPI)
+- 时间：5小时前
+- 摘要：1. 最强主线：油气/ 能源（绝对领涨）. 油气开采及服务（+5.64%，13.33 亿）：全天最强板块，涨幅、资金双第一。 · 2. 次强主线：养殖/ 农业（防御+ 政策） · 3. 第三 ...
+- 链接：https://m.cj.sina.cn/page/aHR0cDovL2ZpbmFuY2Uuc2luYS5jb20uY24vc3RvY2svY3BiZC8?from=redirect
+**3. 外生冲击影响加深，货币政策关注重点或有调整**
+- 来源：证券时报 (SerpAPI)
+- 时间：15小时前
+- 摘要：会议强调“通胀走势和货币政策调整存在不确定性”，这意味着美联储等主要央行的政策路径可能更加难以预测，需关注其对我国金融市场稳定性的可能影响。
+- 链接：https://www.stcn.com/article/detail/3725746.html
+**4. 构建科学稳健的货币政策体系和覆盖全面的宏观审慎管理体系**
+- 来源：求是 (SerpAPI)
+- 时间：2025年12月4日
+- 摘要：中央银行以维护币值稳定和金融稳定为双目标，货币政策体系和宏观审慎管理体系是中央银行实施宏观管理的两项基础性工具，是实现双目标的双支柱。构建科学稳健 ...
+- 链接：https://www.qstheory.cn/20251204/6216d5d992514a96b3985cbb15a1bbef/c.html
+**5. 货币政策和中央银行业务**
+- 来源：International Monetary Fund | IMF (SerpAPI)
+- 时间：2026-04-03
+- 摘要：中央银行使用货币政策来管理经济波动并实现价格稳定，这意味着保持较低且稳定的通胀水平。许多发达经济体的央行设定了明确的通胀目标。许多发展中国家也在转向通胀目标制。
+- 链接：https://www.imf.org/zh/about/factsheets/sheets/2023/monetary-policy-and-central-banking
+
+### 【行业板块】（9条）
+**1. Goldquest Mining (CVE:GQC) Reaches New 1-Year High - What's Next? - MarketBeat**
 - 来源：未知 (Tavily)
 - 时间：未知
-- 摘要：Home page Seeking Alpha - Power to Investors. Search for Symbols, analysts, keywords. # U.S. equities ended higher as hopes of Iran conflict de-escalation lifted sentiment. Apr 01, 2026, 4:05 PM ETDow
-- 链接：https://seekingalpha.com/news/4571343-us-equities-advanced-as-hopes-of-iran-conflict-de-escalation-lifts-sentiment
-**2. Evolution Mining Reports Lapse of 1.37 Million Performance Rights - TipRanks**
-- 来源：未知 (Tavily)
-- 时间：未知
-- 摘要：* Discover top-performing stock ideas and upgrade to a portfolio of market leaders with  Smart Investor Picks. Evolution Mining Limited has notified the market that 1,372,955 performance rights, tradi
-- 链接：https://www.tipranks.com/news/company-announcements/evolution-mining-reports-lapse-of-1-37-million-performance-rights
-**3. Citi: remains our S&P 500 year-end target at 7,700, U.S. Q1 earnings will be solid - CNBC**
+- 摘要：Image 1: MarketBeat - Stock Market News and Research Tools. +Reaches+New+1-Year+High++-+What%27s+Next%3f%20https://www.marketbeat.com/instant-alerts/goldquest-mining-cvegqc-reaches-new-1-year-high-wha
+- 链接：https://www.marketbeat.com/instant-alerts/goldquest-mining-cvegqc-reaches-new-1-year-high-whats-next-2026-04-02/
+**2. Citi: remains our S&P 500 year-end target at 7,700, U.S. Q1 earnings will be solid - CNBC**
 - 来源：未知 (Tavily)
 - 时间：未知
 - 摘要：# Citi: remains our S&P 500 year-end target at 7,700, U.S. Q1 earnings will be solid. Scott Chronert of Citi says U.S. corporates remain fundamentally strong, with earnings holding up well, but forwar
 - 链接：https://www.cnbc.com/video/2026/04/02/sp-wall-street-us-market-iran-war-oil-price-us-earnings.html
-**4. Market technicals showing lows may be behind us, says 3Fourteen's Warren Pies - cnbc.com**
+**3. Allure Security Highlights Scale and Economics of Account Takeover Threat - tipranks.com**
 - 来源：未知 (Tavily)
 - 时间：未知
-- 摘要：# Market technicals showing lows may be behind us, says 3Fourteen's Warren Pies. Warren Pies, 3Fourteen Research, joins 'Closing Bell' to discuss what markets need before investors can feel better, th
-- 链接：https://www.cnbc.com/video/2026/04/01/market-technicals-showing-lows-may-be-behind-us-says-3fourteens-warren-pies.html
-**5. AI-Driven Workforce Planning Elevates Finance–HR Alignment at TeamOhana - TipRanks**
+- 摘要：# Nvidia (NVDA) H100 Prices Surge 40% as New GPUs Fail to Meet Insatiable Demand. Chipmaker Nvidia (NVDA) is seeing a surge in demand for its H100 GPUs. In fact, rental prices have jumped by nearly 40
+- 链接：https://www.tipranks.com/news/private-companies/allure-security-highlights-scale-and-economics-of-account-takeover-threat
+**4. AI-Driven Workforce Planning Elevates Finance–HR Alignment at TeamOhana - TipRanks**
 - 来源：未知 (Tavily)
 - 时间：未知
 - 摘要：According to a recent LinkedIn post from TeamOhana, the company is drawing attention to commentary from Brex CFO and President Ben Gammell on how AI-driven organizational change may reshape the relati
 - 链接：https://www.tipranks.com/news/private-companies/ai-driven-workforce-planning-elevates-finance-hr-alignment-at-teamohana
+**5. User - The Chronicle-Journal**
+- 来源：未知 (Tavily)
+- 时间：未知
+- 摘要：# Hims & Hers Health, Regeneron, Biogen, BioMarin Pharmaceutical, and Moderna Shares Are Falling, What You Need To Know. The news sparked a significant sell-off in the sector, with the Nifty Pharma in
+- 链接：http://markets.chroniclejournal.com/chroniclejournal/article/stockstory-2026-4-2-hims-and-hers-health-regeneron-biogen-biomarin-pharmaceutical-and-moderna-shares-are-falling-what-you-need-to-know
 
-### 【其他】（4条）
-**1. 财经要闻频道,今日要闻，炒股消息，股市重大消息**
-- 来源：证券时报 (SerpAPI)
+### 【宏观经济】（1条）
+**1. 2025年第二季度中国货币政策执行报告**
+- 来源：人民银行 (SerpAPI)
 - 时间：2026-04-03
-- 摘要：沪市年报披露分红额已超8000亿元，多家公司2026年中期分红“已安排” · 进入年报披露“最后一月”，上市公司定期报告密集披露，同步“上线”的还有公司的年度“红包”和年度分红 ...
-- 链接：https://www.stcn.com/article/list/yw.html
-**2. 全球财经快讯_东方财富网**
+- 摘要：四是保持汇率基本稳定。坚持市场在汇率形成中起决定性作用，发挥好汇率对宏观经济、国际收支的调节功能，综合施策，促进预期平稳，在复杂形势下保持人民币汇率基本稳定。五 ...
+- 链接：https://www.pbc.gov.cn/goutongjiaoliu/113456/113469/2025092212554814094/index.html
+
+### 【公司要闻】（2条）
+**1. Post Market Wrap: April 2, 2026 - CNBC**
+- 来源：未知 (Tavily)
+- 时间：未知
+- 摘要：# News Update – Market Close. CNBC brings you fast, accurate, and actionable business news and market updates. Council on Foreign Relation's Haass: I expected Pres. Trump to announce an Iran policy du
+- 链接：https://www.cnbc.com/video/2026/04/02/post-market-wrap-april-2-2026.html
+**2. 公募基金是该调仓，还是调业绩基准？**
+- 来源：华尔街见闻 (SerpAPI)
+- 时间：2025年5月16日
+- 摘要：假设所有的主动基金都玩“削足适履”——让业绩基准匹配仓位，初始调仓的压力的确很小，但是，它会带来一个要命的后果——系统的隐含波动率大幅下降。
+- 链接：https://wallstreetcn.com/articles/3747262
+
+### 【投资巨头】（7条）
+**1. 全球财经快讯 - 东方财富**
 - 来源：东方财富 (SerpAPI)
-- 时间：1天前
+- 时间：2天前
+- 摘要：02:56. 布伦特原油期货合约结算价达到每桶109.03美元，涨幅为7.78%。 · 02:33. 美国原油结算价自2022年以来首次高于每桶110美元。 · 02:01. 摩根大通表示， ...
+- 链接：https://kuaixun.eastmoney.com/sp.html
+**2. 如何认识基金调仓行为？为什么会发生调仓？**
+- 来源：和讯网 (SerpAPI)
+- 时间：2025年6月28日
+- 摘要：基金调仓指的是基金经理对基金资产组合进行调整，改变不同资产的配置比例。简单来说，就是卖出一些原有的持仓证券，同时买入新的证券。这一行为背后有着多 ...
+- 链接：https://m.hexun.com/funds/2025-06-28/219871507.html
+**3. 持仓重仓“隐藏款”浮出水面基金经理沿AI主线布局**
+- 来源：新浪财经 (SerpAPI)
+- 时间：2天前
+- 摘要：公募基金2025年年报披露完毕，基金的隐形重仓股、调仓换股路径和后续观点也浮出水面。从年报来看，在2025年下半年的行情中，多位基金经理沿着AI主线布局。
+- 链接：https://finance.sina.cn/2026-04-01/detail-inhsxqxn2050377.d.html?vt=4&cid=76568&node_id=76568
+**4. 公募基金调仓路线图浮现，中际旭创成头号重仓股**
+- 来源：21财经 (SerpAPI)
+- 时间：2026年1月23日
+- 摘要：据国信证券统计，2025年4季度，基金经理主动加仓（剥离由个股涨跌带来的权重被动变化）较多个股依次为：中国平安、东山精密、天华新能、云铝股份、迈为股份、生 ...
+- 链接：https://m.21jingji.com/article/20260123/herald/2cbe27943cfd9dc707a405f44957d39b_zaker.html
+**5. 市场风格悄然切换基金重仓股“由小变大”**
+- 来源：武汉市人民政府 (SerpAPI)
+- 时间：2025年10月27日
+- 摘要：推动此轮市场风格转换的力量之一，不得不提公募基金调仓换股的步伐，其中不少绩优基金的重仓股正在经历“由小变大”的深刻转变。
+- 链接：https://jrj.wuhan.gov.cn/ztzl_57/xyrd/dcczbsc/202510/t20251027_2666306.shtml
+
+### 【其他】（10条）
+**1. 股票频道- 东方财富网**
+- 来源：东方财富 (SerpAPI)
+- 时间：2026-04-03
+- 摘要：纳指涨超1% 全球直播 · 北交所再融资新规后首家！ · 又一券商60亿定增再融资新政后证券业首单有何关注点？ · 均普智能发行2亿元科创债，募资用于人形机器人核心技术研发 · 拟定增 ...
+- 链接：https://stock.eastmoney.com/
+**2. https://gu.qq.com/sh000001/zs/news**
+- 来源：QQ.com (SerpAPI)
+- 时间：2026-04-03
+- 摘要：没有此网页的信息。
+- 链接：https://gu.qq.com/sh000001/zs/news
+**3. 全球财经快讯_东方财富网**
+- 来源：东方财富 (SerpAPI)
+- 时间：2天前
 - 摘要：东方财富网全球财经快讯为投资者24小时提供最全面最及时的新闻资讯；直播内容覆盖证券、商品、外汇、债券、黄金等金融领域。投资者还可以查看最实时、 ...
-- 链接：https://kuaixun.eastmoney.com/index.html
-**3. 财经资讯头条_今日财经要闻报道**
+- 链接：https://kuaixun.eastmoney.com/
+**4. 财经资讯头条_今日财经要闻报道**
 - 来源：英为财情 Investing.com (SerpAPI)
 - 时间：2026-04-03
 - 摘要：Investing.com上最热门的财经资讯，今日重大财经资讯一览无余，每日最新财经资讯头条按读者关注度排列。 特朗普言论吓崩全球市场！美指期货跌约1%，韩股重挫4%，币圈超13万人爆 ...
 - 链接：https://cn.investing.com/news/most-popular-news
-**4. 全球财经新闻最新消息**
-- 来源：英为财情 Investing.com (SerpAPI)
+**5. 股市评论_ 东方财富网 - 财经**
+- 来源：东方财富 (SerpAPI)
 - 时间：2026-04-03
-- 摘要：英为财情提供7×24小时每日最新财经资讯，今天国际和国内财经大事件最新消息，涵盖全球股市、外汇、期货、虚拟货币的经济资讯报道。
-- 链接：https://cn.investing.com/news/latest-news
+- 摘要：【十大券商策略：调整是机会！坚守中国优势制造业】中信证券：坚守中国优势制造业，静待4月决断；国泰海通：调整是机会，布局中国资产；华泰证券：弱平衡下寻找确定性。
+- 链接：https://finance.eastmoney.com/a/cgspl.html
 
 ---
 ## 📋 分析报告框架
-请按以下结构输出分析报告：
-### 一、全球市场概览
-### 二、核心事件解读（3-5件）
-### 三、政策动态追踪
-### 四、行业热点分析
-### 五、重点关注公司
+请按以下结构精简输出分析报告，每部分不超过3-5句话，事件需标注具体日期和时间（精确到分钟）：
+### 一、全球市场概览（一句话总结）
+### 二、投资巨头动向（追踪高瓴、红杉、贝莱德、巴菲特、桥水等机构的观点与操作）
+### 三、核心事件解读（一句一事件）
+### 四、政策动态追踪
+### 五、行业热点
 ### 六、宏观环境判断
-### 七、风险因素提醒
+### 七、风险因素
 ### 八、投资策略建议
 ---
-**要求**：专业客观，避免预测具体点位，侧重趋势和逻辑分析，区分短期波动和长期趋势
+**要求**：极简风格，字少信息多，避免废话，每条信息需有实质内容；投资巨头分析需结合具体日期和仓位变化
