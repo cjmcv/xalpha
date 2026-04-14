@@ -67,24 +67,46 @@ class FinancialNewsFetcher:
         return best
 
     def fetch_tavily(self, days: int = 1, max_results: int = 10) -> list[dict]:
-        """获取Tavily国际财经新闻"""
+        """获取Tavily国际财经新闻（同时混入SerpAPI中文国际财经搜索避免重复）"""
+        results = []
+        # Tavily国际
         try:
             resp = self.tavily.search(
                 query="Latest US stock market news, Fed policy, tech stocks, hot sectors, earnings",
                 topic="news", days=days, search_depth="basic",
                 max_results=max_results, include_raw_content=False, include_answer=True
             )
-            return [{
-                "title": r["title"],
-                "snippet": r["content"],
-                "source": r.get("source", "未知"),
-                "date": r.get("published_at", "未知"),
-                "link": r.get("url", ""),
-                "engine": "Tavily"
-            } for r in resp.get("results", [])]
+            for r in resp.get("results", []):
+                r["engine"] = "Tavily"
+            results.extend(resp.get("results", []))
         except Exception as e:
             print(f"Tavily 获取失败: {e}")
-            return []
+
+        # SerpAPI补充国际财经（避免与fetch_chinese重叠，这里只搜美股/港股）
+        if self.serpapi_key:
+            intl_queries = ["纳斯达克100 科技股 美股", "标普500 华尔街 美股", "恒生指数 港股行情"]
+            seen, unique = set(), []
+            for q in intl_queries:
+                try:
+                    params = {"q": q, "api_key": self.serpapi_key, "hl": "zh-CN", "gl": "cn", "num": 5, "qdr": "d"}
+                    for r in GoogleSearch(params).get_dict().get("organic_results", []):
+                        r["engine"] = "SerpAPI"
+                        key = r.get("title", "")[:50]
+                        if key and key not in seen:
+                            seen.add(key)
+                            unique.append(r)
+                except:
+                    continue
+            results.extend(unique)
+
+        return [{
+            "title": r["title"],
+            "snippet": r.get("content", "") or r.get("snippet", ""),
+            "source": r.get("source", "未知"),
+            "date": r.get("published_at", "未知"),
+            "link": r.get("url", "") or r.get("link", ""),
+            "engine": r.get("engine", "Tavily")
+        } for r in results]
 
     def fetch_chinese(self, num: int = 30) -> list[dict]:
         """获取SerpAPI中文财经新闻（24小时内）"""
@@ -123,6 +145,48 @@ class FinancialNewsFetcher:
             "link": r.get("link", ""),
             "engine": "SerpAPI"
         } for r in unique_results[:50]]
+
+    def search_industry(self, queries: list[str]) -> list[dict]:
+        """根据行业查询词列表搜索新闻（Tavily+SerpAPI合并去重）"""
+        all_results = []
+        seen = set()
+
+        # SerpAPI
+        if self.serpapi_key:
+            for q in queries:
+                try:
+                    params = {"q": q, "api_key": self.serpapi_key, "hl": "zh-CN", "gl": "cn", "num": 5, "qdr": "d"}
+                    for r in GoogleSearch(params).get_dict().get("organic_results", []):
+                        r["engine"] = "SerpAPI"
+                        key = r.get("title", "")[:50]
+                        if key and key not in seen:
+                            seen.add(key)
+                            all_results.append(r)
+                except:
+                    continue
+
+        # Tavily
+        if self.tavily_key:
+            try:
+                combined_q = " OR ".join(queries[:3])
+                resp = self.tavily.search(query=combined_q, topic="news", days=3, max_results=len(queries) * 2, include_raw_content=False)
+                for r in resp.get("results", []):
+                    r["engine"] = "Tavily"
+                    key = r.get("title", "")[:50]
+                    if key and key not in seen:
+                        seen.add(key)
+                        all_results.append(r)
+            except Exception as e:
+                print(f"Tavily 行业搜索失败: {e}")
+
+        return [{
+            "title": r.get("title", ""),
+            "snippet": r.get("content", "") or r.get("snippet", ""),
+            "source": r.get("source", "未知"),
+            "date": r.get("published_at", "") or r.get("date", ""),
+            "link": r.get("url", "") or r.get("link", ""),
+            "engine": r.get("engine", "Unknown")
+        } for r in all_results]
 
     def fetch_all(self, tavily_days: int = 1, tavily_max: int = 10, serpapi_num: int = 20) -> dict:
         """获取并合并所有新闻，自动分类去重"""

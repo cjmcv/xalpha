@@ -1,0 +1,192 @@
+**报告生成时间**：2026-04-14 14:28:33
+## 📊 新闻来源统计
+| 来源 | 数量 |
+|------|------|
+| 国际财经 (Tavily) | 40 条 |
+| 国内财经 (SerpAPI) | 50 条 |
+| **合计** | **89 条** |
+---
+## 📰 分类新闻汇总
+
+### 【美股市场】（20条）
+**1. 纳斯达克100 (NDX) 实时行情，今日最新指数，走势图**
+- 来源：英为财情 Investing.com (SerpAPI)
+- 时间：未知
+- 摘要：Evercore ISI首次覆盖闪迪股票,因AI需求给予跑赢大盘评级 · 美股异动| 闪迪(SNDK.US)涨逾5% 着手搭建HBF原型产线生态 · Sandisk股价因纳入纳斯达克100指数而上涨 · 高盛股价盘 ...
+- 链接：https://cn.investing.com/indices/nq-100
+**2. 纳斯达克100(NDX100)最新价格_行情_走势图 - 东方财富**
+- 来源：东方财富 (SerpAPI)
+- 时间：未知
+- 摘要：提供纳斯达克100(NDX100)股票的行情走势、五档盘口、逐笔交易等实时行情数据，及纳斯达克100(NDX100)的资讯、公司公告、研究报告、行业研报、F10资料、行业资讯、资金流 ...
+- 链接：https://quote.eastmoney.com/unify/r/100.NDX100
+**3. 纳斯达克100指数(.NDX) - 新浪财经 - 行情中心**
+- 来源：手机新浪网 (SerpAPI)
+- 时间：未知
+- 摘要：新浪财经-美股频道为您提供纳斯达克100指数(.NDX)股票股价,股票实时行情,新闻,财报,美股实时交易数据,研究报告,评级,财务指标分析等与纳斯达克100指数(.NDX)股票相关的 ...
+- 链接：http://stock.finance.sina.com.cn/usstock/quotes/.NDX.html?showimg
+**4. 纳斯达克100指数(NDX) - 个股概要、股票价格、行情走势**
+- 来源：Tiger Brokers (SerpAPI)
+- 时间：未知
+- 摘要：成分股 ; Atlassian Corporation PLC. US. TEAM. +61.30, +7.26% ; AppLovin Corporation. US. APP. +417.45, +6.66% ; Workday. US. WDAY. +119.92, +6.60% ; Adobe. US. ADBE.
+- 链接：https://www.itiger.com/hans/stock/NDX
+**5. 纳斯达克100科技板块指数(.NDXT)_美股行情_今日股价与走势图**
+- 来源：新浪网 (SerpAPI)
+- 时间：未知
+- 摘要：今开: 12469.320. 最高: 12504.911. 量 ; 昨收: 12416.916. 最低: 12338.299. 振幅 ; 上涨: undefined. 下跌: undefined. 平盘 ...
+- 链接：http://stock.sina.com.cn/usstock/quotes/.NDXT.html
+
+### 【A股市场】（26条）
+**1. A股最新新闻资讯**
+- 来源：新浪财经 (SerpAPI)
+- 时间：2026-04-14
+- 摘要：联讯仪器4月14日开启申购，将在科创板上市，募资总额约21亿元 · 贝多财经111浏览04月13日08:30. 百亿保费难撑业绩成色手回集团利润虚增股价腰斩.
+- 链接：https://cj.sina.cn/k/article/column_article/3
+**2. 财经首页- 东方财富网**
+- 来源：东方财富 (SerpAPI)
+- 时间：2026-04-14
+- 摘要：股市评论 · 中金：把握基本面拐点以及修复弹性可能为当前重要的投资思路 · 中信建投：短线交易新规落地助力长期资金入市 · 华金策略：A股短期可能已见底延续偏强的底部震荡趋势 ...
+- 链接：https://finance.eastmoney.com/
+**3. A股市场_同花顺行情中心_同花顺财经网**
+- 来源：同花顺财经 (SerpAPI)
+- 时间：2026-04-14
+- 摘要：龙虎榜 · 大宗交易 · 新股申购 · 限售解禁 · 财务分析 · 沪港通 · 资金流向 · 交易提示 · 技术选股 · 公告速递 · 融资融券 · 股指期货 · 概念板块 · 地域板块 ...
+- 链接：https://q.10jqka.com.cn/
+**4. A股四大指数集体高开，市场逾4300股上涨 - 财经**
+- 来源：东方财富 (SerpAPI)
+- 时间：2小时前
+- 摘要：4月14日，A股四大指数集体高开，沪指涨0.46%，深成指涨0.74%，创业板指涨0.88%，科创综指涨1.15%。盘面上，AI应用、智能体、工业金属、算力租赁、半导体、 ...
+- 链接：https://finance.eastmoney.com/a/202604143703983226.html
+**5. 新浪财经_金融信息服务商**
+- 来源：新浪网 (SerpAPI)
+- 时间：2026-04-14
+- 摘要：2026-04-12 19:39:24【王石：造谣者交给法律】2026-04-12 19:32:03【伊朗官员说美国比伊朗更需要协议达成】2026-04-12 19:25:42【中信建投：A股迎修复行情围绕景气行业 ...
+- 链接：https://finance.sina.com.cn/
+
+### 【港股中概】（10条）
+**1. 恒生指数(HSI)最新价格_行情_走势图-手机东方财富财经门户**
+- 来源：东方财富 (SerpAPI)
+- 时间：未知
+- 摘要：恒生指数. HSI. 电脑版. -. --. 今开-. 最高-. 最低-. 总量-. 金额-. 振幅-. 昨收-. 股吧; 成分股. 全部; 热门.
+- 链接：https://quote.eastmoney.com/unify/r/100.HSI
+**2. 香港恒生指数(HSI) 实时行情**
+- 来源：英为财情 Investing.com (SerpAPI)
+- 时间：未知
+- 摘要：香港恒生指数(HSI) ; 1日. +0.49% ; 1周. +2.67% ; 1个月. +1.26% ; 3个月. -4.49% ; 6个月. +1.36%.
+- 链接：https://cn.investing.com/indices/hang-sen-40
+**3. 恒生指數(^HSI) 圖表、數據和新聞**
+- 来源：Yahoo 財經 (SerpAPI)
+- 时间：未知
+- 摘要：前收市價 25,660.85 · 開市 25,929.40 · 成交量 0 · 今日波幅 25,748.79 - 25,995.09 · 52 週波幅 20,868.36 - 28,056.10 · 平均成交量 3,353,857,894 ...
+- 链接：https://hk.finance.yahoo.com/quote/%5EHSI/
+**4. 恒生指数（hkHSI）股票价格_股票实时行情_走势图-手机新浪 ...**
+- 来源：新浪网 (SerpAPI)
+- 时间：未知
+- 摘要：行情中心. 恒生指数25116.529 -0.702%HSI. APP下载. * 港股行情延时15分钟，若需查看实时行情，请点击下方打开APP. 25116.529. -177.502 -0.702%. 未开盘 04-02 16:08. 今 ...
+- 链接：https://stocks.sina.cn/hk/?code=HSI
+**5. 恒生指数 - 腾讯证券**
+- 来源：腾讯新闻 (SerpAPI)
+- 时间：未知
+- 摘要：没有此网页的信息。
+- 链接：https://gu.qq.com/hkHSI/zs
+
+### 【行业板块】（13条）
+**1. Stock Market Today: Dow Dips On Trump Iran Move; These Biotech, Software Stocks Shine (Live Coverage) - Investor's Business Daily**
+- 来源：未知 (Tavily)
+- 时间：未知
+- 摘要：IBD 50IBD Sector LeadersIBD Big Cap 20IBD Long-Term LeadersIPO LeadersMy Stock ListsStock Lists UpdateStocks On The MoveNew HighsStock SpotlightStocks Near Buy ZoneRS Line At New HighRising Profit Est
+- 链接：https://www.investors.com/market-trend/stock-market-today/dow-jones-sp500-nasdaq-us-iran-war-blockade-oil-prices/
+**2. Wall Street's earnings fantasies may soon get harsh reality check - Reuters**
+- 来源：未知 (Tavily)
+- 时间：未知
+- 摘要：A Wall Street sign is pictured outside the New York Stock Exchange in the Manhattan borough of New York City, New York, U.S., April 16, 2021. As the first ​quarter reporting season kicks into gear thi
+- 链接：https://www.reuters.com/markets/us/wall-streets-earnings-fantasies-may-soon-get-harsh-reality-check-2026-04-13/
+**3. Stock Market Today: Major Indexes Gain on Hopes of Eventual Iran Peace Deal; US Begins Blockade of Strait of Hormuz - Investopedia**
+- 来源：未知 (Tavily)
+- 时间：未知
+- 摘要：Markets News, April 8, 2026: U.S. Indexes End Sharply Higher, Oil Plunges as US, Iran Agree to Ceasefire; Dow Jumps 1,300 Points. Stock Market Today: Major Indexes End Mostly Lower to Conclude Strong 
+- 链接：https://www.investopedia.com/stock-market-today-dow-jones-s-and-p-500-04132026-11948325
+**4. Investors can find value in the tech sector, says Evercore ISI’s Julian Emanuel - CNBC**
+- 来源：未知 (Tavily)
+- 时间：未知
+- 摘要：# Investors can find value in the tech sector, says Evercore ISI’s Julian Emanuel. Julian Emanuel, Evercore ISI, joins 'Closing Bell Overtime' to discuss market resiliency amid geopolitical strife, wh
+- 链接：https://www.cnbc.com/video/2026/04/13/investors-can-find-value-in-the-tech-sector-says-evercoreas-julian-emanuel.html
+**5. The Federal Reserve's April Inflation Forecast Is In -- and It Just Keeps Getting Worse for Wall Street - The Motley Fool**
+- 来源：未知 (Tavily)
+- 时间：未知
+- 摘要：The Fed's projection is nightmare fuel for a historically expensive stock market. * The Federal Reserve Bank of Cleveland's proprietary inflation forecasting tool estimates a greater-than-one-percenta
+- 链接：https://www.fool.com/investing/2026/04/13/fed-april-inflation-forecast-is-in-worse-wall-st/
+
+### 【公司要闻】（1条）
+**1. 基金持仓咋看?调仓频率有讲究,这样操作稳赚不亏**
+- 来源：新浪财经 (SerpAPI)
+- 时间：2026年1月27日
+- 摘要：基金持仓在基金详情页的定期报告里能看，重点盯行业分布、前十大重仓股和持仓集中度；调仓没有固定时间，核心看市场行情、基金业绩和自身需求，新手建议 ...
+- 链接：https://cj.sina.cn/articles/view/7879922977/1d5ae1521019019dei?froms=ggmp
+
+### 【投资巨头】（6条）
+**1. 花旗上调美国股票评级预计标普500指数年底前达7700点**
+- 来源：新浪财经 (SerpAPI)
+- 时间：未知
+- 摘要：花旗的看法与贝莱德和摩根士丹利等华尔街机构类似，此前他们也对美国市场相对韧性给予积极评估。标普500指数周一已抹去冲突以来的跌幅，得益于美伊暂时停火 ...
+- 链接：https://finance.sina.cn/usstock/mggd/2026-04-14/detail-inhumshk4259450.d.html?oid=WA%200821%207001%200763%20(FORTRESS)%20Pintu%20Rumah%20Ada%20Kacanya%20Airpura%20Pesisir%20Selatan&vt=4
+**2. 手机中财网**
+- 来源：中财网 (SerpAPI)
+- 时间：2026-04-14
+- 摘要：2股获买入评级最新:巨人网络09:20. 盘后22股公布分红方案-更新中 09:15. 防雷:盘后8股被宣布减持09:15. 今日公告透露利好：6只个股有潜力08:29. 1/4/日/机/构/强/推/买/入 ...
+- 链接：https://www.cfi.net.cn/
+**3. 基金年报披露完毕知名基金经理最新调仓路径来了**
+- 来源：东方财富 (SerpAPI)
+- 时间：2026年4月5日
+- 摘要：2025年基金年报披露完毕，公募基金的隐形重仓股浮出水面。 知名基金经理的最新持仓结构与调仓路径成为市场关注焦点。从披露情况来看，周期与资源品 ...
+- 链接：https://wap.eastmoney.com/a/202604053695697135.html
+**4. 如何认识基金调仓行为？为什么会发生调仓？**
+- 来源：和讯网 (SerpAPI)
+- 时间：2025年6月28日
+- 摘要：基金调仓指的是基金经理对基金资产组合进行调整，改变不同资产的配置比例。简单来说，就是卖出一些原有的持仓证券，同时买入新的证券。这一行为背后有着多 ...
+- 链接：https://m.hexun.com/funds/2025-06-28/219871507.html
+**5. 基金去年四季度新进重仓股五大榜单（附股）**
+- 来源：证券时报 (SerpAPI)
+- 时间：2026年1月23日
+- 摘要：基金去年四季度重仓股曝光。共2977只股票入围基金重仓股名单。调仓动向显示，新进654只，增持1128只，减持1170只，24只股票基金持股数与前一季度相比持平。
+- 链接：https://www.stcn.com/article/detail/3607789.html
+
+### 【其他】（13条）
+**1. 納斯達克100股票指數(^NDX) 圖表、數據和新聞**
+- 来源：Yahoo 財經 (SerpAPI)
+- 时间：未知
+- 摘要：前收市價 25,116.34 · 開市 25,069.07 · 成交量 1,103,216,000 · 今日波幅 24,999.20 - 25,387.69 · 52 週波幅 17,592.92 - 26,182.10 · 平均成交量 8,925,130,333 ...
+- 链接：https://hk.finance.yahoo.com/quote/%5ENDX/
+**2. 纳斯达... - 腾讯证券**
+- 来源：腾讯新闻 (SerpAPI)
+- 时间：未知
+- 摘要：没有此网页的信息。
+- 链接：https://gu.qq.com/usNDX
+**3. 兩位華爾街券商稱標普500已觸底**
+- 来源：Yahoo 財經 (SerpAPI)
+- 时间：未知
+- 摘要：Calvasina表示,該指數似乎已經建立了一個"脆弱而模糊的底部"。她指出,標普500維持在她認為的常規回調範圍內,即較1月高點下跌不到10%,且衰退 ...
+- 链接：https://hk.finance.yahoo.com/news/%E5%85%A9%E4%BD%8D%E8%8F%AF%E7%88%BE%E8%A1%97%E5%88%B8%E5%95%86%E7%A8%B1%E6%A8%99%E6%99%AE500%E5%B7%B2%E8%A7%B8%E5%BA%95-141759812.html
+**4. 恆生指數成份股**
+- 来源：AASTOCKS.com (SerpAPI)
+- 时间：未知
+- 摘要：指數及成份股- 指數成份股- 恆生指數 ; 前收 25,660.85. 開市 25,929.40 ; 1個月波幅. 24,203.54 - 26,250.14 ; 2個月波幅. 24,203.54 - 27,156.28 ; 3個月波幅. 24,203.54 - ...
+- 链接：http://www.aastocks.com/tc/stocks/market/index/hk-index-con.aspx
+**5. 财联社电报：7*24小时滚动播报股市资讯**
+- 来源：财联社电报 (SerpAPI)
+- 时间：2026-04-14
+- 摘要：盘面上热点快速轮动，全市场近2700只个股上涨。从板块来看，算力产业链反复走强 ... 下跌方面，油气股集体调整，潜能恒信、通源石油、科力股份均下挫。截至收盘 ...
+- 链接：https://m.cls.cn/
+
+---
+## 📋 分析报告框架
+请按以下结构精简输出分析报告，每部分不超过3-5句话，事件需标注具体日期和时间（精确到分钟）：
+### 一、全球市场概览（一句话总结）
+### 二、投资巨头动向（追踪观点与操作）
+### 三、核心事件解读（一句一事件）
+### 四、政策动态追踪
+### 五、行业热点
+### 六、宏观环境判断
+### 七、风险因素
+### 八、投资策略建议
+---
+**要求**：极简风格，字少信息多，避免废话，每条信息需有实质内容；投资巨头分析需结合具体日期和仓位变化

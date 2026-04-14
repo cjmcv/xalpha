@@ -150,14 +150,20 @@ class mulfix_pos:
         df["目标占比"] = df["分类"].apply(lambda x: category_config.get(x, {}).get("target_ratio", 0))
         df["phase"] = df["分类"].apply(lambda x: category_config.get(x, {}).get("phase", "WATCH"))
 
-        # 只保留phase为ACC的基金
-        df = df[df["phase"] == "ACC"]
+        # 分离ACC和非ACC
+        df_acc = df[df["phase"] == "ACC"].copy()
+        df_other = df[df["phase"] != "ACC"].copy()
 
-        # 汇总
-        outer_df = df.groupby("分类").agg({
+        # 汇总ACC分类
+        outer_df = df_acc.groupby("分类").agg({
             "参考市值": "sum",
             "目标占比": "first"
         }).reset_index()
+
+        # 非ACC归入"其他"
+        other_mv = df_other["参考市值"].sum()
+        if other_mv > 0:
+            outer_df.loc[len(outer_df)] = {"分类": "其他", "参考市值": other_mv, "目标占比": 0}
 
         # 加入现金
         if cash > 0:
@@ -178,7 +184,7 @@ class mulfix_pos:
             outer_name_map[label] = short_name
 
         # 内层债券
-        bond_df = df[df["分类"] == "二级债基"].copy()
+        bond_df = df_acc[df_acc["分类"] == "二级债基"].copy()
         inner_data_with_label = []
         inner_name_map = {}
         for _, row in bond_df.iterrows():

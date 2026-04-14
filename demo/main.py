@@ -41,7 +41,7 @@ category_config = {
     "A股价值主动": {"keywords": ["大成高鑫"],     "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},
     # A股，逢低布局
     "证券公司": {"keywords": ["证券公司"],        "vol_coef": 1.0, "entry": "2026-04-10", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},
-    "主要消费红利": {"keywords": ["消费红利"],    "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},  # 008929 低估
+    "主要消费红利": {"keywords": ["消费红利"],    "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 5, "phase": "ACC", "amount_per_share": 60},  # 008929 低估
     "中证A500": {"keywords": ["A500"],           "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
     "中证1000": {"keywords": ["1000"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
     "创业板": {"keywords": ["创业板"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
@@ -51,12 +51,12 @@ category_config = {
     "中证医疗": {"keywords": ["医疗"],           "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},  # 008929 低估
     "自由现金流": {"keywords": ["现金流"],        "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 0, "phase": "ACC", "amount_per_share": 0},
     # 港股，逢低布局
-    "恒生科技": {"keywords": ["恒生科技"],        "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},  # 020989 低估
-    "港股通信息技术": {"keywords": ["信息技术"],   "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "ACC", "amount_per_share": 0},   # 026755 适中
+    "恒生科技": {"keywords": ["恒生科技"],        "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 5, "phase": "ACC", "amount_per_share": 60},  # 020989 低估
+    "港股通信息技术": {"keywords": ["信息技术"],   "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 20},   # 026755 适中
     "港股通创新药": {"keywords": ["创新药"],      "vol_coef": 1.1, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
     # 二级债基看最大回撤等指标，不定期手动加仓
     "红利低波": {"keywords": ["红利低波"],        "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},
-    "二级债基": {"keywords": ["债券", "瑞锦混合"], "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 40, "phase": "ACC", "amount_per_share": 0}, # 250 + 100 + 50
+    "二级债基": {"keywords": ["债券", "瑞锦混合"], "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 40, "phase": "ACC", "amount_per_share": 300},
     "黄金": {"keywords": ["黄金", "上海金"],      "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
     "其他": {"keywords": [],                     "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
     "现金": {"keywords": [],                     "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 10, "phase": "ACC", "amount_per_share": 0},
@@ -798,8 +798,10 @@ def get_fund_detail(fund_code=None):
 
 
 def _build_position_health_prompt() -> str:
-    """构建持仓体检分析段落，追加到新闻prompt中"""
+    """对持仓>1%的类别联网搜索行业新闻，构建持仓体检分析段落"""
     try:
+        from financial_news import FinancialNewsFetcher
+
         sysopen, summary_df = get_fund_positions_data()
         df = sysopen.df.copy()
         total_value = sysopen.total_market_value + sysopen.cash
@@ -812,93 +814,64 @@ def _build_position_health_prompt() -> str:
             return "其他"
 
         df["分类"] = df["简称"].apply(classify)
-        cat_df = df.groupby("分类").agg({"参考市值": "sum", "简称": lambda x: list(x)[0]}).reset_index()
+        cat_df = df.groupby("分类").agg({"参考市值": "sum"}).reset_index()
         cat_df = cat_df[cat_df["参考市值"] / total_value > 0.01].sort_values("参考市值", ascending=False)
 
         if cat_df.empty:
             return ""
 
-        code_to_name = dict(zip(summary_df['产品代码'].astype(str), summary_df['简称']))
-        name_to_code = {v: k for k, v in code_to_name.items()}
+        # 行业关键词映射
+        industry_queries = {
+            "纳斯达克100": ["纳斯达克100 科技股", "Nasdaq tech stocks"],
+            "标普500": ["标普500 美股", "S&P 500 stock market"],
+            "全球主动": ["QDII 全球基金 投资"],
+            "中证A500": ["中证A500 A股", "A股 中证A500"],
+            "中证1000": ["中证1000 小盘股"],
+            "创业板": ["创业板 创业板指"],
+            "科创50": ["科创50 科创板"],
+            "有色金属": ["有色金属 矿业 大宗商品"],
+            "半导体": ["半导体 芯片 集成电路"],
+            "证券公司": ["证券行业 券商 股市"],
+            "主要消费红利": ["消费红利 食品饮料 消费"],
+            "中证医疗": ["医疗行业 医药 医疗器械"],
+            "恒生科技": ["恒生科技 港股 科技"],
+            "港股通信息技术": ["港股 信息技术 科技"],
+            "港股通创新药": ["港股 创新药 生物医药"],
+            "红利低波": ["红利低波 中证红利"],
+            "自由现金流": ["自由现金流 价值投资"],
+            "二级债基": ["债券基金 固收 债市"],
+        }
 
+        fetcher = FinancialNewsFetcher()
         lines = []
         for _, row in cat_df.iterrows():
             cat_name = row["分类"]
             pos_pct = row["参考市值"] / total_value * 100
-            rep_name = row["简称"]
-            fund_code = name_to_code.get(rep_name)
-            if not fund_code:
+            if pos_pct < 1:
                 continue
 
-            fund_df = get_fund_data(fund_code)
-            if fund_df.empty or len(fund_df) < 3:
-                continue
+            queries = industry_queries.get(cat_name, [cat_name])
+            news_list = fetcher.search_industry(queries)
 
-            latest_nav = fund_df.iloc[0]['单位净值']
-            one_day_date = fund_df.iloc[0]['净值日期'].strftime('%m-%d')
-
-            change_1d = None
-            if len(fund_df) > 1:
-                change_1d = (latest_nav - fund_df.iloc[1]['单位净值']) / fund_df.iloc[1]['单位净值'] * 100
-
-            change_20_avg = None
-            if len(fund_df) > 20:
-                change_20_avg = (latest_nav - fund_df.iloc[1:21]['单位净值'].mean()) / fund_df.iloc[1:21]['单位净值'].mean() * 100
-
-            change_60_avg = None
-            if len(fund_df) > 60:
-                change_60_avg = (latest_nav - fund_df.iloc[1:61]['单位净值'].mean()) / fund_df.iloc[1:61]['单位净值'].mean() * 100
-
-            df_asc = fund_df.sort_values('净值日期', ascending=True).reset_index(drop=True)
-            one_year_data = df_asc[df_asc['净值日期'] >= (df_asc.iloc[-1]['净值日期'] - pd.Timedelta(days=365))]
-            drawdown, peak_date = None, None
-            if len(one_year_data) > 0:
-                max_idx = one_year_data['单位净值'].idxmax()
-                max_nav = one_year_data.loc[max_idx, '单位净值']
-                peak_date = one_year_data.loc[max_idx, '净值日期'].strftime('%m-%d')
-                drawdown = (max_nav - latest_nav) / max_nav * 100
-
-            entry_date_str = category_config.get(cat_name, {}).get("entry", None)
-            since_entry_dev = 0
-            if entry_date_str:
-                entry_date = pd.to_datetime(entry_date_str).normalize()
-                today_start = pd.Timestamp.today().normalize()
-                one_year_ago = today_start - pd.DateOffset(years=1)
-                df_entry = fund_df.sort_values('净值日期', ascending=True).copy()
-                df_entry['净值日期'] = pd.to_datetime(df_entry['净值日期']).dt.normalize()
-                entry_data = df_entry[df_entry['净值日期'] >= entry_date]
-                if len(entry_data) > 0:
-                    entry_nav = entry_data.iloc[0]['单位净值']
-                    if entry_date <= one_year_ago:
-                        window_data = df_entry[df_entry['净值日期'] >= one_year_ago]
-                        if len(window_data) > 0:
-                            since_entry_dev = (latest_nav - window_data.iloc[0]['单位净值']) / window_data.iloc[0]['单位净值'] * 100
-                    else:
-                        since_entry_dev = (latest_nav - entry_nav) / entry_nav * 100
-
-            c1d = f"{change_1d:+.2f}%" if change_1d is not None else "N/A"
-            c20 = f"{change_20_avg:+.2f}%" if change_20_avg is not None else "N/A"
-            c60 = f"{change_60_avg:+.2f}%" if change_60_avg is not None else "N/A"
-            dd = f"回撤{drawdown:.1f}%(高点{peak_date})" if drawdown is not None else "N/A"
-            se = f"{since_entry_dev:+.2f}%"
-
-            line = (
-                f"- **{cat_name}**（{pos_pct:.1f}%）：今日涨跌{c1d}，距MA20{c20}，距MA60{c60}，"
-                + f"{dd}，距入场偏离{se}；基金{rep_name}(" + str(fund_code) + ")" + "净值" + f"{latest_nav:.4f}({one_day_date})"
-            )
-            lines.append(line)
+            if not news_list:
+                lines.append(f"- **{cat_name}**（{pos_pct:.1f}%）：暂无相关新闻")
+            else:
+                news_str = "\n".join([
+                    f"  {i+1}. {n['title']}（{n['source']}）{n['snippet'][:100]}"
+                    for i, n in enumerate(news_list[:3])
+                ])
+                lines.append(f"- **{cat_name}**（{pos_pct:.1f}%）：\n{news_str}")
 
         if not lines:
             return ""
 
         health_section = (
             "\n---\n"
-            "## 📋 持仓体检分析（当前仓位>1%的类别）\n"
-            "### 九、持仓现状与未来展望\n"
-            "请对以下每个持仓类别分别给出**一句话现状**和**一秒钟未来展望**（方向性判断即可）：\n"
+            "## 📋 持仓体检分析（当前仓位>1%的行业）\n\n"
+            "### 九、持仓行业现状与未来展望\n\n"
+            "以下为各持仓行业近3日新闻，请结合新闻分析各行业现状，并给出未来展望：\n\n"
             + "\n".join(lines)
-            + "\n\n**要求**：现状要客观描述当前技术面位置（均线偏离/回撤幅度）；"
-            "未来给出一句话方向性判断。格式：类别：现状|未来。"
+            + "\n\n**要求**：每个行业给出**一句话现状**（概括近期新闻反映的行业状态）和**一句话未来展望**（方向性判断），格式：行业名：现状|未来。"
         )
         return health_section
     except Exception as e:
