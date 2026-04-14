@@ -146,8 +146,12 @@ class mulfix_pos:
 
         # 生成分类
         df["分类"] = df["简称"].apply(classify)
-        # 根据配置获取目标占比
+        # 根据配置获取目标占比和phase
         df["目标占比"] = df["分类"].apply(lambda x: category_config.get(x, {}).get("target_ratio", 0))
+        df["phase"] = df["分类"].apply(lambda x: category_config.get(x, {}).get("phase", "WATCH"))
+
+        # 只保留phase为ACC的基金
+        df = df[df["phase"] == "ACC"]
 
         # 汇总
         outer_df = df.groupby("分类").agg({
@@ -160,7 +164,7 @@ class mulfix_pos:
             outer_df.loc[len(outer_df)] = {"分类": "现金", "参考市值": cash, "目标占比": category_config["现金"]["target_ratio"]}
 
         total_value = outer_df["参考市值"].sum()
-        
+
         # 预先格式化外层标签
         outer_data_with_label = []
         outer_name_map = {}

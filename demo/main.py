@@ -13,24 +13,53 @@ import tempfile
 from datetime import datetime, timedelta
 from fund_positions import from_positions, mulfix_pos
 
+# TODO: 1. 加仓建议: ✅按当前仓位从大到小排序 (done)
+#       2. 持仓分布：去掉小于1%的部分（已撤销，不过滤）
+#       3. 当日财经报告: ✅添加持仓体检分析，对持仓大于1%的类别添加现状和未来点评 (done)
+#       4. 可转债的百元溢价率
+
+# 短债现金：10%
+# A股固收+：景颐招利，瑞锦混合，安阳债券    40%
+# A股低波权益：中证红利低波(股息率<4%减仓)  5%
+# 美股: 纳指100，全球优质企业，全球成长精选 10+15%
+# A股主动: 兴全合润 (谢志宇 成长) 5% + 大成高鑫（刘旭 价值）5%
+# A股港股权益：10% 仅低估布局
+#   -> A股行业权益：证券公司，消费红利，半导体
+#   -> 港股行业权益：恒生科技，港股通信息技术，港股通创新药
+#   -> 策略：国证自由现金流，有色金属，中证医疗（删除）
+
 # "类别": {"keywords": ["基金名称里的关键词"]，"entry": "实际开始定投日期, 
 #          "target_ratio": 目标份额比例, "vol_coef": 波动系数(直接乘以加仓阈值，波动越大，触发加仓越难)"},
 # "target_ratio": 0 表示暂不持仓；二级债基/全球主动和黄金只做手动加仓。
 category_config = {
-    # 美股
-    "标普500": {"keywords": ["标普500"],         "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 0, "amount_per_share": 50},  #  017641 适中
-    "纳斯达克100": {"keywords": ["纳斯达克100"],  "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 10, "amount_per_share": 100}, # 012752 适中
-    "全球主动": {"keywords": ["全球"],           "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 15, "amount_per_share": 250},  # 100 + 50
-    # A股/港股
-    "主要消费红利": {"keywords": ["消费红利"],    "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 5, "amount_per_share": 100},  # 008929 低估
-    "中证A500": {"keywords": ["A500"],           "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 0, "amount_per_share": 0},
-    "恒生科技": {"keywords": ["恒生科技"],        "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 5, "amount_per_share": 100},  # 020989 低估
-    "港股通信息技术": {"keywords": ["港股通"],    "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 5, "amount_per_share": 50},   # 026755 适中
+    # 美股，低估或跌了加快建仓，回涨时转向固收+。高估减半止盈。等估值被打下来后继续快速加仓。
+    "标普500": {"keywords": ["标普500"],         "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 0, "phase": "ACC", "amount_per_share": 0},  #  017641 适中
+    "纳斯达克100": {"keywords": ["纳斯达克100"],  "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 10, "phase": "ACC", "amount_per_share": 100}, # 012752 适中
+    "全球成长主动": {"keywords": ["全球"],        "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 15, "phase": "ACC", "amount_per_share": 200},  # 100 + 50
+    # A股
+    "A股成长主动": {"keywords": ["兴全合润"],     "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},
+    "A股价值主动": {"keywords": ["大成高鑫"],     "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},
+    # A股，逢低布局
+    "证券公司": {"keywords": ["证券公司"],        "vol_coef": 1.0, "entry": "2026-04-10", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},
+    "主要消费红利": {"keywords": ["消费红利"],    "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},  # 008929 低估
+    "中证A500": {"keywords": ["A500"],           "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
+    "中证1000": {"keywords": ["1000"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
+    "创业板": {"keywords": ["创业板"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
+    "科创50": {"keywords": ["科创50"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
+    "有色金属": {"keywords": ["有色金属"],        "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
+    "半导体": {"keywords": ["半导体"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
+    "中证医疗": {"keywords": ["医疗"],           "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},  # 008929 低估
+    "自由现金流": {"keywords": ["现金流"],        "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 0, "phase": "ACC", "amount_per_share": 0},
+    # 港股，逢低布局
+    "恒生科技": {"keywords": ["恒生科技"],        "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},  # 020989 低估
+    "港股通信息技术": {"keywords": ["信息技术"],   "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "ACC", "amount_per_share": 0},   # 026755 适中
+    "港股通创新药": {"keywords": ["创新药"],      "vol_coef": 1.1, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
     # 二级债基看最大回撤等指标，不定期手动加仓
-    "二级债基": {"keywords": ["债券", "瑞锦混合"], "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 50, "amount_per_share": 400}, # 250 + 100 + 50
-    "黄金": {"keywords": ["黄金", "上海金"],      "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 0, "amount_per_share": 0},
-    "其他": {"keywords": [],                     "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 0, "amount_per_share": 0},
-    "现金": {"keywords": [],                     "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 10, "amount_per_share": 0},
+    "红利低波": {"keywords": ["红利低波"],        "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},
+    "二级债基": {"keywords": ["债券", "瑞锦混合"], "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 40, "phase": "ACC", "amount_per_share": 0}, # 250 + 100 + 50
+    "黄金": {"keywords": ["黄金", "上海金"],      "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
+    "其他": {"keywords": [],                     "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
+    "现金": {"keywords": [],                     "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 10, "phase": "ACC", "amount_per_share": 0},
 }
 
 # ==================== 定投份数计算规则 ====================
@@ -47,8 +76,8 @@ RULES = {
     # 中期均线（20日）：提权，与周调整匹配
     "ma20": [
         {"range": (-float('inf'), -6), "shares": 2.0},
-        {"range": (-6, -3), "shares": 1.0},
-        {"range": (-3, float('inf')), "shares": 0.0},
+        {"range": (-6, -2), "shares": 1.0},
+        {"range": (-2, float('inf')), "shares": 0.0},
     ],
     # 长期均线（60日）：提权，捕捉熊市趋势
     "ma60": [
@@ -639,6 +668,19 @@ def fund_pos_change_stat():
         if not table_data:
             return "❌ 无法获取任何基金数据"
 
+        # 按当前仓位从大到小排序
+        def get_position_amount(item):
+            shares = item["shares"]
+            amount_per_share = item["amount_per_share"]
+            if item.get("is_bond_first", False):
+                return amount_per_share
+            elif shares is not None:
+                return (shares + 1) * amount_per_share
+            else:
+                return amount_per_share
+
+        table_data.sort(key=get_position_amount, reverse=True)
+
         result = "| 分类 | 基金代码 | 基金简称 | 定投金额 | 加仓份额 | 最新涨跌 | 距MA5 | <span style='color: #87CEEB;'>距MA10</span> | <span style='color: #87CEEB;'>距MA20</span> | <span style='color: #87CEEB;'>距MA60</span> | <span style='color: #87CEEB;'>距入场点(窗口一年)</span> | 距一年高点 |\n"
         result += "|------|-------|-------|------------|------------|------------|--------|--------|--------|--------|-------------------|----------------|\n"
 
@@ -755,6 +797,114 @@ def get_fund_detail(fund_code=None):
         return f"❌ 查询失败: {str(e)}"
 
 
+def _build_position_health_prompt() -> str:
+    """构建持仓体检分析段落，追加到新闻prompt中"""
+    try:
+        sysopen, summary_df = get_fund_positions_data()
+        df = sysopen.df.copy()
+        total_value = sysopen.total_market_value + sysopen.cash
+
+        def classify(name):
+            for category, config in category_config.items():
+                for keyword in config.get("keywords", []):
+                    if keyword in name:
+                        return category
+            return "其他"
+
+        df["分类"] = df["简称"].apply(classify)
+        cat_df = df.groupby("分类").agg({"参考市值": "sum", "简称": lambda x: list(x)[0]}).reset_index()
+        cat_df = cat_df[cat_df["参考市值"] / total_value > 0.01].sort_values("参考市值", ascending=False)
+
+        if cat_df.empty:
+            return ""
+
+        code_to_name = dict(zip(summary_df['产品代码'].astype(str), summary_df['简称']))
+        name_to_code = {v: k for k, v in code_to_name.items()}
+
+        lines = []
+        for _, row in cat_df.iterrows():
+            cat_name = row["分类"]
+            pos_pct = row["参考市值"] / total_value * 100
+            rep_name = row["简称"]
+            fund_code = name_to_code.get(rep_name)
+            if not fund_code:
+                continue
+
+            fund_df = get_fund_data(fund_code)
+            if fund_df.empty or len(fund_df) < 3:
+                continue
+
+            latest_nav = fund_df.iloc[0]['单位净值']
+            one_day_date = fund_df.iloc[0]['净值日期'].strftime('%m-%d')
+
+            change_1d = None
+            if len(fund_df) > 1:
+                change_1d = (latest_nav - fund_df.iloc[1]['单位净值']) / fund_df.iloc[1]['单位净值'] * 100
+
+            change_20_avg = None
+            if len(fund_df) > 20:
+                change_20_avg = (latest_nav - fund_df.iloc[1:21]['单位净值'].mean()) / fund_df.iloc[1:21]['单位净值'].mean() * 100
+
+            change_60_avg = None
+            if len(fund_df) > 60:
+                change_60_avg = (latest_nav - fund_df.iloc[1:61]['单位净值'].mean()) / fund_df.iloc[1:61]['单位净值'].mean() * 100
+
+            df_asc = fund_df.sort_values('净值日期', ascending=True).reset_index(drop=True)
+            one_year_data = df_asc[df_asc['净值日期'] >= (df_asc.iloc[-1]['净值日期'] - pd.Timedelta(days=365))]
+            drawdown, peak_date = None, None
+            if len(one_year_data) > 0:
+                max_idx = one_year_data['单位净值'].idxmax()
+                max_nav = one_year_data.loc[max_idx, '单位净值']
+                peak_date = one_year_data.loc[max_idx, '净值日期'].strftime('%m-%d')
+                drawdown = (max_nav - latest_nav) / max_nav * 100
+
+            entry_date_str = category_config.get(cat_name, {}).get("entry", None)
+            since_entry_dev = 0
+            if entry_date_str:
+                entry_date = pd.to_datetime(entry_date_str).normalize()
+                today_start = pd.Timestamp.today().normalize()
+                one_year_ago = today_start - pd.DateOffset(years=1)
+                df_entry = fund_df.sort_values('净值日期', ascending=True).copy()
+                df_entry['净值日期'] = pd.to_datetime(df_entry['净值日期']).dt.normalize()
+                entry_data = df_entry[df_entry['净值日期'] >= entry_date]
+                if len(entry_data) > 0:
+                    entry_nav = entry_data.iloc[0]['单位净值']
+                    if entry_date <= one_year_ago:
+                        window_data = df_entry[df_entry['净值日期'] >= one_year_ago]
+                        if len(window_data) > 0:
+                            since_entry_dev = (latest_nav - window_data.iloc[0]['单位净值']) / window_data.iloc[0]['单位净值'] * 100
+                    else:
+                        since_entry_dev = (latest_nav - entry_nav) / entry_nav * 100
+
+            c1d = f"{change_1d:+.2f}%" if change_1d is not None else "N/A"
+            c20 = f"{change_20_avg:+.2f}%" if change_20_avg is not None else "N/A"
+            c60 = f"{change_60_avg:+.2f}%" if change_60_avg is not None else "N/A"
+            dd = f"回撤{drawdown:.1f}%(高点{peak_date})" if drawdown is not None else "N/A"
+            se = f"{since_entry_dev:+.2f}%"
+
+            line = (
+                f"- **{cat_name}**（{pos_pct:.1f}%）：今日涨跌{c1d}，距MA20{c20}，距MA60{c60}，"
+                + f"{dd}，距入场偏离{se}；基金{rep_name}(" + str(fund_code) + ")" + "净值" + f"{latest_nav:.4f}({one_day_date})"
+            )
+            lines.append(line)
+
+        if not lines:
+            return ""
+
+        health_section = (
+            "\n---\n"
+            "## 📋 持仓体检分析（当前仓位>1%的类别）\n"
+            "### 九、持仓现状与未来展望\n"
+            "请对以下每个持仓类别分别给出**一句话现状**和**一秒钟未来展望**（方向性判断即可）：\n"
+            + "\n".join(lines)
+            + "\n\n**要求**：现状要客观描述当前技术面位置（均线偏离/回撤幅度）；"
+            "未来给出一句话方向性判断。格式：类别：现状|未来。"
+        )
+        return health_section
+    except Exception as e:
+        return f"\n\n_（持仓体检分析获取失败: {str(e)}）_"
+
+
 def daily_financial_report(param=None):
     """当日财经新闻报告"""
     try:
@@ -776,8 +926,13 @@ def daily_financial_report(param=None):
         # 默认生成当日报告
         news_fetcher = FinancialNewsFetcher()
         news_prompt = news_fetcher.run()
+
+        # 追加持仓体检分析
+        health_prompt = _build_position_health_prompt()
+        full_prompt = news_prompt + health_prompt
+
         llm_analyzer = LLMNewsAnalyzer()
-        report = llm_analyzer.analyze(news_prompt)
+        report = llm_analyzer.analyze(full_prompt)
         return f"📰 **当日财经新闻报告**\n\n{report}"
     except Exception as e:
         return f"❌ 生成新闻报告失败: {str(e)}"
