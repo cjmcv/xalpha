@@ -167,7 +167,7 @@ class mulfix_pos:
 
         # 加入现金
         if cash > 0:
-            outer_df.loc[len(outer_df)] = {"分类": "现金", "参考市值": cash, "目标占比": category_config["现金"]["target_ratio"]}
+            outer_df.loc[len(outer_df)] = {"分类": "现金短债", "参考市值": cash, "目标占比": category_config["现金短债"]["target_ratio"]}
 
         total_value = outer_df["参考市值"].sum()
 
@@ -183,34 +183,13 @@ class mulfix_pos:
             outer_data_with_label.append((label, value))
             outer_name_map[label] = short_name
 
-        # 内层债券
-        bond_df = df_acc[df_acc["分类"] == "二级债基"].copy()
-        inner_data_with_label = []
-        inner_name_map = {}
-        for _, row in bond_df.iterrows():
-            short_name = row["简称"]
-            value = int(round(row["参考市值"]))
-            percent = (value / total_value * 100) if total_value > 0 else 0
-            label = f"{short_name}: {percent:.1f}%"
-            inner_data_with_label.append((label, value))
-            inner_name_map[label] = short_name
-
         # ===================== 绘图 =====================
         c = (
             Pie()
             .add(
-                series_name="债券明细",
-                data_pair=inner_data_with_label,
-                radius=["0%", "35%"],
-                label_opts=opts.LabelOpts(
-                    position="inside",
-                    formatter="{b}"
-                ),
-            )
-            .add(
                 series_name="持仓分类",
                 data_pair=outer_data_with_label,
-                radius=["40%", "75%"],
+                radius=["0%", "75%"],
                 label_opts=opts.LabelOpts(
                     position="outside",
                     formatter="{b}"
@@ -219,7 +198,7 @@ class mulfix_pos:
             .set_global_opts(
                 title_opts=opts.TitleOpts(
                     title=f"持仓总额({fund_total}) + 现金({cash}) = {grand_total}",
-                    pos_left="center", 
+                    pos_left="center",
                     title_textstyle_opts=opts.TextStyleOpts(color="gold")
                 ),
                 legend_opts=opts.LegendOpts(orient="vertical", pos_left="left"),
@@ -227,7 +206,7 @@ class mulfix_pos:
             .set_series_opts(
                 tooltip_opts=opts.TooltipOpts(
                     trigger="item",
-                    formatter=lambda params: f"{outer_name_map.get(params.name, params.name.split(':')[0])}: {params.value}元"
+                    formatter=lambda params: f"{params.name}: {params.value}元"
                 )
             )
         )

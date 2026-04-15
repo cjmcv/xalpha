@@ -13,35 +13,67 @@ import tempfile
 from datetime import datetime, timedelta
 from fund_positions import from_positions, mulfix_pos
 
-# TODO: 1. 加仓建议: ✅按当前仓位从大到小排序 (done)
-#       2. 持仓分布：去掉小于1%的部分（已撤销，不过滤）
-#       3. 当日财经报告: ✅添加持仓体检分析，对持仓大于1%的类别添加现状和未来点评 (done)
-#       4. 可转债的百元溢价率
+# TODO: 1. 可转债的百元溢价率
+#       2. 持仓基金加仓建议: 1）只列出 phase 为 ACC的基金
+#                          2）目标偏离程度：当前6.25%，目标5%，偏离(6.25-5)/5=25%
+#                     
+
+# 规则：1. 分批建仓，日定投，每月增量资金按目标比例分配，即超配少投，低配多投。（自动低吸）
+#      2. 月度再平衡：目标偏离≥20%时，包含短债在内，超配部分卖出，低配部分补足。（自动高抛低吸，如增量资金能完成修复则不卖）
+#      3. 短债应急补仓：权益仓位从最近高点回撤>15%，动用短债分批定投修复比例，每个权益仓位单独处理。月度再平衡时，将短债现金归位。
+#      4. 熊市短债减配机制：沪深300/纳指100 从近12个月高点回撤≥25%，判定为A股/美股熊市。
+#                         增量资金忽略短债份额，优先补足权益仓位。如增量资金无法补足，等待月度平衡权益仓位，短债保持空仓。
+#                         对应基金单月反弹≥10% 后，恢复常规规则，增量资金重新优先补足短债。
+#                      
+# 已知当前总份额是10万，有A基金4%，但目标是5%；B基金6%，目标是10%；C基金8%，目标是5%。月增量资金是2.5万，设计公式计算A/B/C基金的每日定投额度，以及是否需要卖出超配基金。
 
 # 短债现金：10%
-# A股固收+：景颐招利，瑞锦混合，安阳债券    40%
-# A股低波权益：中证红利低波(股息率<4%减仓)  5%
-# 美股: 纳指100，全球优质企业，全球成长精选 10+15%
-# A股主动: 兴全合润 (谢志宇 成长) 5% + 大成高鑫（刘旭 价值）5%
-# A股港股权益：10% 仅低估布局
-#   -> A股行业权益：证券公司，消费红利，半导体
-#   -> 港股行业权益：恒生科技，港股通信息技术，港股通创新药
-#   -> 策略：国证自由现金流，有色金属，中证医疗（删除）
+# A股固收+：景颐招利，瑞锦混合，安阳债券        40% 
+# A股固收+卫星：中证红利低波(股息4以上)         5%
+# A股价值卫星: 国证自由现金流                  5%
+#
+# AH股主动价值: 大成高鑫 (刘旭)            5%
+#              中欧红利优享 (蓝小康)       5%
+# A股主动成长: 兴全合润 (谢志宇)            5%
+#
+# 美股被动成长: 纳指100                    8%
+# 美股主动成长: 易方达全球优质企业 (李剑锋)  5%
+#              广发全球精选 (李耀柱)       5%
+#              易方达全球成长精选 (郑希)    2%
+#
+# 机会仓位：美股高估-主动价值，美股降温-全球优质企业   5%
+# 
+#   仅低估布局，如未进场则短债现金与红利低波各分一半
+#   -> A股行业权益：证券公司，半导体
+#   -> 港股行业权益：恒生科技
+#   -> （删除）：港股通信息技术，消费红利 # 港股通创新药，有色金属，中证医疗
 
 # "类别": {"keywords": ["基金名称里的关键词"]，"entry": "实际开始定投日期, 
 #          "target_ratio": 目标份额比例, "vol_coef": 波动系数(直接乘以加仓阈值，波动越大，触发加仓越难)"},
 # "target_ratio": 0 表示暂不持仓；二级债基/全球主动和黄金只做手动加仓。
 category_config = {
     # 美股，低估或跌了加快建仓，回涨时转向固收+。高估减半止盈。等估值被打下来后继续快速加仓。
-    "标普500": {"keywords": ["标普500"],         "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 0, "phase": "ACC", "amount_per_share": 0},  #  017641 适中
-    "纳斯达克100": {"keywords": ["纳斯达克100"],  "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 10, "phase": "ACC", "amount_per_share": 100}, # 012752 适中
-    "全球成长主动": {"keywords": ["全球"],        "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 15, "phase": "ACC", "amount_per_share": 200},  # 100 + 50
-    # A股
-    "A股成长主动": {"keywords": ["兴全合润"],     "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},
-    "A股价值主动": {"keywords": ["大成高鑫"],     "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},
+    "标普500": {"keywords": ["标普500"],         "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 0, "phase": "FIX", "amount_per_share": 0},  #  017641 适中
+    "纳斯达克100": {"keywords": ["纳斯达克100"],  "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 8, "phase": "ACC", "amount_per_share": 0}, # 012752 适中
+    "美股主动-全球优质企业": {"keywords": ["全球优质企业"], "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 5, "phase": "ACC", "amount_per_share": 200},  # 100 + 50
+    "美股主动-广发全球精选": {"keywords": ["广发全球精选"], "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 5, "phase": "ACC", "amount_per_share": 200},  # 100 + 50
+    "美股主动-全球成长精选": {"keywords": ["全球成长精选"], "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 200},  # 100 + 50
+    # AH股主动
+    "A股成长主动-兴全合润": {"keywords": ["兴全合润"],       "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},
+    "A股价值主动-大成高鑫": {"keywords": ["大成高鑫"],       "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 8, "phase": "ACC", "amount_per_share": 100},
+    "A股价值主动-中欧红利": {"keywords": ["中欧红利"],       "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 7, "phase": "ACC", "amount_per_share": 100},
+    # A股固收+卫星
+    "自由现金流": {"keywords": ["现金流"],        "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},
+    "红利低波": {"keywords": ["红利低波"],        "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},
+    # A股二级债基
+    "二级债基-景颐招利": {"keywords": ["景颐招利"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 25, "phase": "ACC", "amount_per_share": 300},
+    "二级债基-瑞锦混合": {"keywords": ["瑞锦混合"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 10, "phase": "ACC", "amount_per_share": 300},
+    "二级债基-安阳债券": {"keywords": ["安阳债券"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 5, "phase": "ACC", "amount_per_share": 300},
+    "现金短债": {"keywords": [],                  "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 10, "phase": "ACC", "amount_per_share": 0},
+    ########
     # A股，逢低布局
-    "证券公司": {"keywords": ["证券公司"],        "vol_coef": 1.0, "entry": "2026-04-10", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},
-    "主要消费红利": {"keywords": ["消费红利"],    "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 5, "phase": "ACC", "amount_per_share": 60},  # 008929 低估
+    "证券公司": {"keywords": ["证券公司"],        "vol_coef": 1.0, "entry": "2026-04-10", "target_ratio": 0, "phase": "FIX", "amount_per_share": 0},
+    "主要消费红利": {"keywords": ["消费红利"],    "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 0, "phase": "FIX", "amount_per_share": 0},   # 008929 低估
     "中证A500": {"keywords": ["A500"],           "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
     "中证1000": {"keywords": ["1000"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
     "创业板": {"keywords": ["创业板"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
@@ -49,17 +81,13 @@ category_config = {
     "有色金属": {"keywords": ["有色金属"],        "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
     "半导体": {"keywords": ["半导体"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
     "中证医疗": {"keywords": ["医疗"],           "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},  # 008929 低估
-    "自由现金流": {"keywords": ["现金流"],        "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 0, "phase": "ACC", "amount_per_share": 0},
     # 港股，逢低布局
-    "恒生科技": {"keywords": ["恒生科技"],        "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 5, "phase": "ACC", "amount_per_share": 60},  # 020989 低估
-    "港股通信息技术": {"keywords": ["信息技术"],   "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 20},   # 026755 适中
+    "恒生科技": {"keywords": ["恒生科技"],        "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 0, "phase": "FIX", "amount_per_share": 0},  # 020989 低估
+    "港股通信息技术": {"keywords": ["信息技术"],   "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},   # 026755 适中
     "港股通创新药": {"keywords": ["创新药"],      "vol_coef": 1.1, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
-    # 二级债基看最大回撤等指标，不定期手动加仓
-    "红利低波": {"keywords": ["红利低波"],        "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},
-    "二级债基": {"keywords": ["债券", "瑞锦混合"], "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 40, "phase": "ACC", "amount_per_share": 300},
+    # 商品
     "黄金": {"keywords": ["黄金", "上海金"],      "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
     "其他": {"keywords": [],                     "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
-    "现金": {"keywords": [],                     "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 10, "phase": "ACC", "amount_per_share": 0},
 }
 
 # ==================== 定投份数计算规则 ====================
@@ -203,6 +231,17 @@ def format_percentage(value, color_mode=False):
     return f"{value:+.2f}%" if value != 0 else "0.00%"
 
 
+def format_rebalance_yuan(value_yuan, pct_of_total):
+    """格式化再平衡金额颜色：正=买入=绿，负=卖出=红"""
+    if value_yuan is None:
+        return "--"
+    if value_yuan > 0:
+        return f'<span style="color: green; font-weight: bold;">+{value_yuan:.0f}</span> ({pct_of_total:.1f}%)'
+    elif value_yuan < 0:
+        return f'<span style="color: red; font-weight: bold;">{value_yuan:.0f}</span> ({pct_of_total:.1f}%)'
+    return f'<span style="color: gray;">0</span> (0.0%)'
+
+
 def chart_to_html(chart):
     with tempfile.NamedTemporaryFile(mode='w', suffix='.html', delete=False) as f:
         temp_path = f.name
@@ -324,11 +363,22 @@ def create_trade_records_charts():
             lambda x: str(int(float(x))) if not pd.isna(x) else None
         )
         df_filtered = df_filtered[df_filtered['交易日期_str'].notna()].copy()
+
+        # 用持仓市值过滤，持仓少于50元的分类不显示
+        _, summary_df = get_fund_positions_data()
+        code_to_name = dict(zip(summary_df['产品代码'].astype(str), summary_df['简称']))
+        summary_df['分类'] = summary_df['简称'].apply(lambda name: next(
+            (cat for cat, cfg in category_config.items()
+             if cfg["keywords"] and any(k in name for k in cfg["keywords"])), "其他"
+        ))
+        cat_mv = summary_df.groupby('分类')['参考市值'].sum()
+        valid_categories = {cat for cat, mv in cat_mv.items() if mv >= 50}
+
         all_dates = sorted(df_filtered['交易日期_str'].unique())
         x_dates = [d[2:] if len(d) == 8 else d for d in all_dates]
 
         purchase_lines = []
-        categories = sorted([c for c in df_filtered['category'].unique() if c != "其他"])
+        categories = sorted([c for c in df_filtered['category'].unique() if c != "其他" and c in valid_categories])
 
         for cat in categories:
             if cat == "二级债基":
@@ -513,8 +563,7 @@ def create_fund_trend_chart(fund_code="019547"):
 def fund_pos_detail():
     try:
         _, summary_df = get_fund_positions_data()
-        result = "📊 **持仓组合摘要**\n\n"
-        result += "| 产品代码 | 简称 | 基金份额 | 单位净值 | 总成本 | 参考市值 | 浮动盈亏 | 收益率 | 占比 |\n"
+        result = "| 产品代码 | 简称 | 基金份额 | 单位净值 | 总成本 | 参考市值 | 浮动盈亏 | 收益率 | 占比 |\n"
         result += "|----------|------|----------|----------|--------|----------|----------|--------|------|\n"
         for _, row in summary_df.iterrows():
             result += f"| {row['产品代码']} | {row['简称']} | {row['基金份额']:.2f} | {row['单位净值']:.4f} | "
@@ -534,9 +583,31 @@ def fund_pos_change_stat():
     """持仓基金涨跌幅统计"""
     try:
         fund_categories = get_fund_categories()
+        _, summary_df = get_fund_positions_data()
+
+        # 按分类汇总市值，计算分类级别的当前占比（与v_positions保持一致）
+        summary_df['分类'] = summary_df['简称'].apply(lambda name: next(
+            (cat for cat, cfg in category_config.items()
+             if any(k in name for k in cfg.get("keywords", []))), "其他"
+        ))
+        # 只取ACC分类的基金来计算百分比
+        df_acc = summary_df[summary_df['分类'].apply(lambda x: category_config.get(x, {}).get("phase") == "ACC")]
+        cat_mv = df_acc.groupby('分类')['参考市值'].sum()
+        # 分母应该是总资产（基金市值+现金），与v_positions一致
+        total_mv = summary_df['参考市值'].sum()
+        sysopen, _ = get_fund_positions_data()
+        grand_total = total_mv + sysopen.cash
+        cat_current_ratio = (cat_mv / grand_total * 100) if grand_total > 0 else {}
+        # 现金短债单独处理（不在summary_df里，市值在sysopen.cash）
+        if sysopen.cash > 0:
+            cat_current_ratio["现金短债"] = sysopen.cash / grand_total * 100
+
         table_data = []
 
         for cat_name, funds in fund_categories.items():
+            # 只列出 phase 为 ACC 的基金
+            if category_config.get(cat_name, {}).get("phase") != "ACC":
+                continue
             funds_to_show = funds if cat_name == "二级债基" else funds[:1]
             for idx, fund in enumerate(funds_to_show):
                 try:
@@ -594,7 +665,7 @@ def fund_pos_change_stat():
 
                     one_day_date = df.iloc[0]['净值日期'].strftime('%m-%d') if len(df) > 0 else ""
 
-                    # 获取该分类的vol_coef用于计算加仓份数
+                    # 获取该分类的vol_coef用于判断是否为债券基金
                     vol_coef = category_config.get(cat_name, {}).get("vol_coef", 1.0)
                     entry_date_str = category_config.get(cat_name, {}).get("entry", None)
 
@@ -637,29 +708,23 @@ def fund_pos_change_stat():
                         since_entry_dev = 0
                         ref_date_str = None
 
-                    # 计算定投份额（基于真实偏离度），vol_coef=99不计算
-                    # 但二级债基第一个基金直接填入amount_per_share
-                    is_bond_first = (vol_coef >= 99 and cat_name == "二级债基" and idx == 0)
-                    if is_bond_first:
-                        shares = 0
-                        ma10_c = ma20_c = ma60_c = since_c = 0
-                    elif vol_coef >= 99:
-                        shares = None
-                        ma10_c = ma20_c = ma60_c = since_c = 0
+                    # 计算份额偏离度（按分类汇总计算）
+                    target_ratio = category_config.get(cat_name, {}).get("target_ratio", 0)
+                    current_ratio = cat_current_ratio.get(cat_name, 0)
+                    if target_ratio > 0:
+                        ratio_dev = (current_ratio - target_ratio) / target_ratio
                     else:
-                        shares, ma10_c, ma20_c, ma60_c, since_c = calc_shares(
-                            change_10_avg if change_10_avg is not None else 0,
-                            change_20_avg if change_20_avg is not None else 0,
-                            change_60_avg if change_60_avg is not None else 0,
-                            since_entry_dev, vol_coef
-                        )
+                        ratio_dev = None
+
+                    # 二级债基第一个基金直接填入amount_per_share
+                    is_bond_first = (vol_coef >= 99 and cat_name == "二级债基" and idx == 0)
 
                     table_data.append({"category": cat_name, "code": fund["code"], "name": fund["name"],
                                        "drawdown": drawdown, "peak_date": peak_date, "one_day_date": one_day_date,
                                        "change_1d": change_1d, "change_5_avg": change_5_avg, "change_10_avg": change_10_avg,
                                        "change_20_avg": change_20_avg, "change_60_avg": change_60_avg,
                                        "since_entry_dev": since_entry_dev, "ref_date_str": ref_date_str,
-                                       "shares": shares, "ma10_c": ma10_c, "ma20_c": ma20_c, "ma60_c": ma60_c, "since_c": since_c,
+                                       "ratio_dev": ratio_dev, "current_ratio": current_ratio, "target_ratio": target_ratio,
                                        "amount_per_share": category_config.get(cat_name, {}).get("amount_per_share", 0),
                                        "is_bond_first": is_bond_first})
                 except:
@@ -668,27 +733,100 @@ def fund_pos_change_stat():
         if not table_data:
             return "❌ 无法获取任何基金数据"
 
-        # 按当前仓位从大到小排序
-        def get_position_amount(item):
-            shares = item["shares"]
-            amount_per_share = item["amount_per_share"]
-            if item.get("is_bond_first", False):
-                return amount_per_share
-            elif shares is not None:
-                return (shares + 1) * amount_per_share
-            else:
-                return amount_per_share
+        # ========== 计算22天定投修复方案 ==========
+        # 构建所有ACC分类的偏离数据（按分类汇总，非按基金）
+        all_cats = list(cat_current_ratio.keys())
+        cat_data_for_calc = []
+        for cat in all_cats:
+            target = category_config.get(cat, {}).get("target_ratio", 0)
+            current = cat_current_ratio.get(cat, 0)
+            if target > 0 or current > 0:
+                cat_data_for_calc.append({
+                    "cat": cat,
+                    "target_ratio": target,
+                    "current_ratio": current,
+                })
 
-        table_data.sort(key=get_position_amount, reverse=True)
+        # 计算最优月定投金额M（使修复后偏离度最小）
+        # M > 0: 新增资金买入低配分类，超配分类卖出
+        # M = 0: 不操作
+        def calc_squared_dev(M, cat_list, grand_total):
+            """给定月定投金额M，计算所有分类的平方偏离总和"""
+            # total_excess和total_shortfall都在百分比单位（points）
+            total_excess = sum(max(0, c["current_ratio"] - c["target_ratio"]) for c in cat_list)
+            total_shortfall = sum(max(0, c["target_ratio"] - c["current_ratio"]) for c in cat_list)
+            # grand_total（总资产）用于计算月后新市值占比
+            total_mv = sum(c["current_ratio"] for c in cat_list)  # 当前各分类百分比之和
 
-        result = "| 分类 | 基金代码 | 基金简称 | 定投金额 | 加仓份额 | 最新涨跌 | 距MA5 | <span style='color: #87CEEB;'>距MA10</span> | <span style='color: #87CEEB;'>距MA20</span> | <span style='color: #87CEEB;'>距MA60</span> | <span style='color: #87CEEB;'>距入场点(窗口一年)</span> | 距一年高点 |\n"
-        result += "|------|-------|-------|------------|------------|------------|--------|--------|--------|--------|-------------------|----------------|\n"
+            total_dev = 0
+            for c in cat_list:
+                excess = max(0, c["current_ratio"] - c["target_ratio"])
+                shortfall = max(0, c["target_ratio"] - c["current_ratio"])
 
-        # 计算日累计总金额（用于占比计算）
-        total_daily = sum(
-            ((item["shares"] + 1) * item["amount_per_share"]) if item["shares"] is not None else item["amount_per_share"]
-            for item in table_data if item["shares"] is not None or item.get("is_bond_first", False)
+                if excess > 0:
+                    # 超配分类：按过剩比例卖出（卖出金额=过剩百分比*grand_total*M的份额）
+                    sell_ratio = excess / total_excess * M if total_excess > 0 else 0
+                    new_mv = c["current_ratio"] - sell_ratio
+                else:
+                    # 低配分类：按短缺比例买入
+                    buy_ratio = shortfall / total_shortfall * M if total_shortfall > 0 else 0
+                    new_mv = c["current_ratio"] + buy_ratio
+
+                new_total_ratio = total_mv + M  # 总额（百分比）变化
+                new_ratio = new_mv / new_total_ratio * 100 if new_total_ratio > 0 else 0
+                dev = (new_ratio - c["target_ratio"])
+                total_dev += dev ** 2
+            return total_dev
+
+        # 数值优化：搜索最优M
+        from scipy.optimize import minimize_scalar
+        total_excess = sum(max(0, c["current_ratio"] - c["target_ratio"]) for c in cat_data_for_calc)
+        upper_bound = max(total_excess * 2, 1)
+
+        result_opt = minimize_scalar(
+            lambda M: calc_squared_dev(M, cat_data_for_calc, grand_total),
+            bounds=(0, upper_bound),
+            method='bounded'
         )
+        optimal_M = result_opt.x
+
+        # 计算每个分类的月/日定投金额
+        total_excess = sum(max(0, c["current_ratio"] - c["target_ratio"]) for c in cat_data_for_calc)
+        total_shortfall = sum(max(0, c["target_ratio"] - c["current_ratio"]) for c in cat_data_for_calc)
+        total_mv = sum(c["current_ratio"] for c in cat_data_for_calc)
+
+        for c in cat_data_for_calc:
+            excess = max(0, c["current_ratio"] - c["target_ratio"])
+            shortfall = max(0, c["target_ratio"] - c["current_ratio"])
+
+            if excess > 0:
+                # 超配分类：按过剩比例卖出（负投资）
+                sell_ratio = excess / total_excess * optimal_M if total_excess > 0 else 0
+                c["monthly_invest"] = -sell_ratio
+                c["daily_invest"] = -sell_ratio / 22
+                new_mv = c["current_ratio"] - sell_ratio
+            else:
+                # 低配分类：按短缺比例买入（正投资）
+                buy_ratio = shortfall / total_shortfall * optimal_M if total_shortfall > 0 else 0
+                c["monthly_invest"] = buy_ratio
+                c["daily_invest"] = buy_ratio / 22
+                new_mv = c["current_ratio"] + buy_ratio
+
+            new_total_ratio = total_mv + optimal_M
+            c["new_ratio"] = new_mv / new_total_ratio * 100 if new_total_ratio > 0 else 0
+            c["post_dev"] = (c["new_ratio"] - c["target_ratio"]) / c["target_ratio"] if c["target_ratio"] > 0 else None
+
+        # 建立 cat -> daily_invest, post_dev, new_ratio 的映射
+        cat_daily_invest = {c["cat"]: c["daily_invest"] for c in cat_data_for_calc}
+        cat_post_dev = {c["cat"]: c["post_dev"] for c in cat_data_for_calc}
+        cat_new_ratio = {c["cat"]: c["new_ratio"] for c in cat_data_for_calc}
+        # ========== 计算结束 ==========
+
+        result = "| 分类 | 基金代码 | 基金简称 | 日定投 | 月后偏离 | 份额偏离 | 最新涨跌 | 距MA5 | 距MA10 | 距MA20 | 距MA60 | 距入场点(窗口一年) | 距一年高点 |\n"
+        result += "|------|-------|-------|------------|------------|------------|--------|--------|--------|--------|-------------------|----------------|------|\n"
+
+        # total_daily = 总卖出金额 = 总买入金额（M/22）
+        total_daily = optimal_M / 22
 
         for item in table_data:
             if item["drawdown"] is None:
@@ -704,31 +842,49 @@ def fund_pos_change_stat():
             since_entry_str = format_percentage(item["since_entry_dev"], color_mode=True) if item["since_entry_dev"] is not None else "--"
             if item["ref_date_str"]:
                 since_entry_str += f' <span style="color: gray;">({item["ref_date_str"]})</span>'
-            shares = item["shares"]
-            if shares is None:
-                shares_str = "---"
-                amount_str = "---"
-            elif item.get("is_bond_first", False):
-                shares_str = "---"
-                amt = item["amount_per_share"]
-                pct = amt / total_daily * 100 if total_daily > 0 else 0
-                amount_str = f'{amt:.0f} ({pct:.1f}%)'
+            ratio_dev = item["ratio_dev"]
+            if ratio_dev is None:
+                ratio_str = "---"
             else:
-                if shares > 0:
-                    shares_str = f'<span style="color: gold; font-weight: bold;">{shares:.1f}={item["ma10_c"]:.1f}+{item["ma20_c"]:.1f}+{item["ma60_c"]:.1f}+{item["since_c"]:.1f}</span>'
-                else:
-                    shares_str = f'{shares:.1f}={item["ma10_c"]:.1f}+{item["ma20_c"]:.1f}+{item["ma60_c"]:.1f}+{item["since_c"]:.1f}'
-                amt = (shares + 1) * item["amount_per_share"]
-                pct = amt / total_daily * 100 if total_daily > 0 else 0
-                amount_str = f'{amt:.0f} ({pct:.1f}%)'
-            result += f"| {item['category']} | {item['code']} | {item['name']} | {amount_str} | {shares_str} | {change_1d_full} | {change_5_str} | {change_10_str} | {change_20_str} | {change_60_str} | {since_entry_str} | {dd_str} |\n"
+                ratio_str = format_percentage(ratio_dev * 100, color_mode=True) + f' <span style="color: gray;">({item["current_ratio"]:.2f}%/{item["target_ratio"]}%)</span>'
+            # 日定投金额（按分类计算，正=买入，负=卖出）
+            # cat_daily_invest 是百分点，需转为元
+            daily_inv_pct = cat_daily_invest.get(item["category"], 0)
+            daily_inv_yuan = daily_inv_pct * grand_total / 100
+            abs_daily_yuan = abs(daily_inv_yuan)
+            # 百分比基于总再平衡金额（卖出=买入，各占50%）
+            pct_of_total = abs_daily_yuan / (total_daily * grand_total / 100 * 2) * 100 if total_daily > 0 else 0
+            amount_str = format_rebalance_yuan(daily_inv_yuan, pct_of_total)
+            # 月后偏离
+            post_dev = cat_post_dev.get(item["category"], None)
+            new_ratio = cat_new_ratio.get(item["category"], None)
+            if post_dev is None or new_ratio is None:
+                post_dev_str = "---"
+            else:
+                post_dev_str = format_percentage(post_dev * 100, color_mode=True) + f' <span style="color: gray;">({new_ratio:.2f}%/{item["target_ratio"]}%)</span>'
+            result += f"| {item['category']} | {item['code']} | {item['name']} | {amount_str} | {post_dev_str} | {ratio_str} | {change_1d_full} | {change_5_str} | {change_10_str} | {change_20_str} | {change_60_str} | {since_entry_str} | {dd_str} |\n"
 
-        weekly = total_daily * 5
-        monthly = total_daily * 22
-        result += f"\n**📊 下周定投总结**\n\n"
-        result += f"- **日累计定投金额**: {total_daily:.0f} 元\n"
-        result += f"- **周累计定投金额**: {weekly:.0f} 元\n"
-        result += f"- **预估月定投金额**: {monthly:.0f} 元\n"
+        # 现金短债单独一行
+        cash_target = category_config.get("现金短债", {}).get("target_ratio", 0)
+        cash_ratio = cat_current_ratio.get("现金短债", 0)
+        cash_dev = (cash_ratio - cash_target) / cash_target if cash_target > 0 else None
+        if cash_dev is None:
+            cash_dev_str = "---"
+        else:
+            cash_dev_str = format_percentage(cash_dev * 100, color_mode=True) + f' <span style="color: gray;">({cash_ratio:.2f}%/{cash_target}%)</span>'
+        cash_daily_pct = cat_daily_invest.get("现金短债", 0)
+        cash_daily_yuan = cash_daily_pct * grand_total / 100
+        cash_abs = abs(cash_daily_yuan)
+        cash_pct = cash_abs / (total_daily * grand_total / 100 * 2) * 100 if total_daily > 0 else 0
+        cash_amount_str = format_rebalance_yuan(cash_daily_yuan, cash_pct)
+        cash_post_dev = cat_post_dev.get("现金短债", None)
+        cash_new_ratio = cat_new_ratio.get("现金短债", None)
+        if cash_post_dev is None or cash_new_ratio is None:
+            cash_post_dev_str = "---"
+        else:
+            cash_post_dev_str = format_percentage(cash_post_dev * 100, color_mode=True) + f' <span style="color: gray;">({cash_new_ratio:.2f}%/{cash_target}%)</span>'
+        result += f"| 现金短债 | - | 现金短债 | {cash_amount_str} | {cash_post_dev_str} | {cash_dev_str} | -- | -- | -- | -- | -- | -- | -- |\n"
+
         return result
     except Exception as e:
         return f"❌ 获取基金数据失败: {str(e)}"
