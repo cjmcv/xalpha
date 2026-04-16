@@ -14,62 +14,57 @@ from datetime import datetime, timedelta
 from fund_positions import from_positions, mulfix_pos
 
 # TODO: 1. 可转债的百元溢价率
-#       2. 持仓基金加仓建议: 1）只列出 phase 为 ACC的基金
-#                          2）目标偏离程度：当前6.25%，目标5%，偏离(6.25-5)/5=25%
-#                     
 
 # 规则：1. 分批建仓，日定投，每月增量资金按目标比例分配，即超配少投，低配多投。（自动低吸）
-#      2. 月度再平衡：目标偏离≥20%时，包含短债在内，超配部分卖出，低配部分补足。（自动高抛低吸，如增量资金能完成修复则不卖）
-#      3. 短债应急补仓：权益仓位从最近高点回撤>15%，动用短债分批定投修复比例，每个权益仓位单独处理。月度再平衡时，将短债现金归位。
+#      2. 90天再平衡：包含短债在内，超配部分卖出，低配部分补足。（自动高抛低吸，如增量资金能完成修复则不卖）
+#                    （高斜率保护：纳指和标普允许比例上浮偏移30%不减持）
+#      3. 短债应急补仓：权益仓位从最近高点回撤>15%，动用短债分批定投修复比例，每个权益仓位单独处理。
 #      4. 熊市短债减配机制：沪深300/纳指100 从近12个月高点回撤≥25%，判定为A股/美股熊市。
 #                         增量资金忽略短债份额，优先补足权益仓位。如增量资金无法补足，等待月度平衡权益仓位，短债保持空仓。
 #                         对应基金单月反弹≥10% 后，恢复常规规则，增量资金重新优先补足短债。
-#                      
-# 已知当前总份额是10万，有A基金4%，但目标是5%；B基金6%，目标是10%；C基金8%，目标是5%。月增量资金是2.5万，设计公式计算A/B/C基金的每日定投额度，以及是否需要卖出超配基金。
 
-# 短债现金：10%
-# A股固收+：景颐招利，瑞锦混合，安阳债券        40% 
-# A股固收+卫星：中证红利低波(股息4以上)         5%
-# A股价值卫星: 国证自由现金流                  5%
-#
-# AH股主动价值: 大成高鑫 (刘旭)            5%
-#              中欧红利优享 (蓝小康)       5%
-# A股主动成长: 兴全合润 (谢志宇)            5%
-#
-# 美股被动成长: 纳指100                    8%
+### 50% ###
+# 现金3级： 短债，华夏鼎泓债券，景颐裕利   6+2+2=10% 
+# A股固收+：景颐招利，瑞锦混合，安阳债券  30+5+5=40%
+### 25% ###
+# A股固收+卫星：中证红利低波(股息4以上)    6% 
+# A股价值卫星: 国证自由现金流             6% 
+# AH股主动价值: 大成高鑫 (刘旭)           6%
+#              中欧红利优享 (蓝小康)      4%
+# A股主动成长: 兴全合润 (谢志宇)          3%
+### 25% ###
+# 美股被动成长: 标普500                    3%
+#              纳指100                   10%
 # 美股主动成长: 易方达全球优质企业 (李剑锋)  5%
 #              广发全球精选 (李耀柱)       5%
 #              易方达全球成长精选 (郑希)    2%
-#
-# 机会仓位：美股高估-主动价值，美股降温-全球优质企业   5%
-# 
-#   仅低估布局，如未进场则短债现金与红利低波各分一半
-#   -> A股行业权益：证券公司，半导体
-#   -> 港股行业权益：恒生科技
-#   -> （删除）：港股通信息技术，消费红利 # 港股通创新药，有色金属，中证医疗
+###########
 
 # "类别": {"keywords": ["基金名称里的关键词"]，"entry": "实际开始定投日期, 
 #          "target_ratio": 目标份额比例, "vol_coef": 波动系数(直接乘以加仓阈值，波动越大，触发加仓越难)"},
 # "target_ratio": 0 表示暂不持仓；二级债基/全球主动和黄金只做手动加仓。
 category_config = {
     # 美股，低估或跌了加快建仓，回涨时转向固收+。高估减半止盈。等估值被打下来后继续快速加仓。
-    "标普500": {"keywords": ["标普500"],         "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 0, "phase": "FIX", "amount_per_share": 0},  #  017641 适中
-    "纳斯达克100": {"keywords": ["纳斯达克100"],  "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 8, "phase": "ACC", "amount_per_share": 0}, # 012752 适中
+    "标普500": {"keywords": ["标普500"],                 "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 3, "phase": "ACC", "amount_per_share": 0},  #  017641 适中
+    "纳斯达克100": {"keywords": ["纳斯达克100"],          "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 10, "phase": "ACC", "amount_per_share": 0},  # 012752 适中
     "美股主动-全球优质企业": {"keywords": ["全球优质企业"], "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 5, "phase": "ACC", "amount_per_share": 200},  # 100 + 50
     "美股主动-广发全球精选": {"keywords": ["广发全球精选"], "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 5, "phase": "ACC", "amount_per_share": 200},  # 100 + 50
     "美股主动-全球成长精选": {"keywords": ["全球成长精选"], "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 200},  # 100 + 50
     # AH股主动
-    "A股成长主动-兴全合润": {"keywords": ["兴全合润"],       "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},
-    "A股价值主动-大成高鑫": {"keywords": ["大成高鑫"],       "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 8, "phase": "ACC", "amount_per_share": 100},
-    "A股价值主动-中欧红利": {"keywords": ["中欧红利"],       "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 7, "phase": "ACC", "amount_per_share": 100},
+    "A股价值主动-大成高鑫": {"keywords": ["大成高鑫"],       "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 6, "phase": "ACC", "amount_per_share": 100},
+    "A股价值主动-中欧红利": {"keywords": ["中欧红利"],       "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 4, "phase": "ACC", "amount_per_share": 100},
+    "A股成长主动-兴全合润": {"keywords": ["兴全合润"],       "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 3, "phase": "ACC", "amount_per_share": 100},
     # A股固收+卫星
-    "自由现金流": {"keywords": ["现金流"],        "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},
-    "红利低波": {"keywords": ["红利低波"],        "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 5, "phase": "ACC", "amount_per_share": 100},
-    # A股二级债基
-    "二级债基-景颐招利": {"keywords": ["景颐招利"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 25, "phase": "ACC", "amount_per_share": 300},
-    "二级债基-瑞锦混合": {"keywords": ["瑞锦混合"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 10, "phase": "ACC", "amount_per_share": 300},
+    "红利低波": {"keywords": ["红利低波"],                  "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 6, "phase": "ACC", "amount_per_share": 100},
+    "自由现金流": {"keywords": ["现金流"],                  "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 6, "phase": "ACC", "amount_per_share": 100},
+    # A股二级债基增强
+    "二级债基-景颐招利": {"keywords": ["景颐招利"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 30, "phase": "ACC", "amount_per_share": 300},
+    "二级债基-瑞锦混合": {"keywords": ["瑞锦混合"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 8, "phase": "ACC", "amount_per_share": 300},
     "二级债基-安阳债券": {"keywords": ["安阳债券"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 5, "phase": "ACC", "amount_per_share": 300},
-    "现金短债": {"keywords": [],                  "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 10, "phase": "ACC", "amount_per_share": 0},
+    # A股短债增强
+    "现金2-景颐裕利": {"keywords": ["景颐裕利"],           "vol_coef": 99, "entry": "2026-04-16", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0},
+    "现金1-鼎泓债券": {"keywords": ["鼎泓债券"],           "vol_coef": 99, "entry": "2026-04-16", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0},
+    "现金短债": {"keywords": [],                         "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 3, "phase": "ACC", "amount_per_share": 0},
     ########
     # A股，逢低布局
     "证券公司": {"keywords": ["证券公司"],        "vol_coef": 1.0, "entry": "2026-04-10", "target_ratio": 0, "phase": "FIX", "amount_per_share": 0},
