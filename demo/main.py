@@ -14,6 +14,13 @@ from datetime import datetime, timedelta
 from fund_positions import from_positions, mulfix_pos
 
 # TODO: 1. 可转债的百元溢价率
+#       2. 财经报告：风险预警清单，1）美联储最近一次表态是鹰派还是鸽派
+#                                    2）新发基金规模有没有连续爆量
+#                                    3）股债利差：http://www.dashiyetouzi.com/tools/compare/hs300_10gz_pro.php
+#                                    4）拥挤度：https://legulegu.com/stockdata/ashares-congestion
+#                                    5）北向资金流向：http://wdatacn.aastocks.com/sc/cnhk/market/quota-balance/
+#                                    给出具体数据，并作出总结。
+#      3. 主动基金的季报总结。
 
 # 规则：1. 分批建仓，日定投，每月增量资金按目标比例分配，即超配少投，低配多投。（自动低吸）
 #      2. 90天再平衡：包含短债在内，超配部分卖出，低配部分补足。（自动高抛低吸，如增量资金能完成修复则不卖）
@@ -45,44 +52,44 @@ from fund_positions import from_positions, mulfix_pos
 # "target_ratio": 0 表示暂不持仓；二级债基/全球主动和黄金只做手动加仓。
 category_config = {
     # 美股，低估或跌了加快建仓，回涨时转向固收+。高估减半止盈。等估值被打下来后继续快速加仓。
-    "标普500": {"keywords": ["标普500"],                 "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 3, "phase": "ACC", "amount_per_share": 0},  #  017641 适中
-    "纳斯达克100": {"keywords": ["纳斯达克100"],          "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 10, "phase": "ACC", "amount_per_share": 0},  # 012752 适中
-    "美股主动-全球优质企业": {"keywords": ["全球优质企业"], "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 5, "phase": "ACC", "amount_per_share": 200},  # 100 + 50
-    "美股主动-广发全球精选": {"keywords": ["广发全球精选"], "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 5, "phase": "ACC", "amount_per_share": 200},  # 100 + 50
-    "美股主动-全球成长精选": {"keywords": ["全球成长精选"], "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 200},  # 100 + 50
+    "标普500": {"keywords": ["标普500"],                 "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 3, "phase": "ACC", "amount_per_share": 0, "link": ""},  #  017641 适中
+    "纳斯达克100": {"keywords": ["纳斯达克100"],          "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 10, "phase": "ACC", "amount_per_share": 0, "link": ""},  # 012752 适中
+    "美股主动-全球优质企业": {"keywords": ["全球优质企业"], "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 5, "phase": "ACC", "amount_per_share": 200, "link": ""},  # 100 + 50
+    "美股主动-广发全球精选": {"keywords": ["广发全球精选"], "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 5, "phase": "ACC", "amount_per_share": 200, "link": ""},  # 100 + 50
+    "美股主动-全球成长精选": {"keywords": ["全球成长精选"], "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 200, "link": ""},  # 100 + 50
     # AH股主动
-    "A股价值主动-大成高鑫": {"keywords": ["大成高鑫"],       "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 6, "phase": "ACC", "amount_per_share": 100},
-    "A股价值主动-中欧红利": {"keywords": ["中欧红利"],       "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 4, "phase": "ACC", "amount_per_share": 100},
-    "A股成长主动-兴全合润": {"keywords": ["兴全合润"],       "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 3, "phase": "ACC", "amount_per_share": 100},
+    "A股价值主动-大成高鑫": {"keywords": ["大成高鑫"],       "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 6, "phase": "ACC", "amount_per_share": 100, "link": ""},
+    "A股价值主动-中欧红利": {"keywords": ["中欧红利"],       "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 4, "phase": "ACC", "amount_per_share": 100, "link": ""},
+    "A股成长主动-兴全合润": {"keywords": ["兴全合润"],       "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 3, "phase": "ACC", "amount_per_share": 100, "link": ""},
     # A股固收+卫星
-    "红利低波": {"keywords": ["红利低波"],                  "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 6, "phase": "ACC", "amount_per_share": 100},
-    "自由现金流": {"keywords": ["现金流"],                  "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 6, "phase": "ACC", "amount_per_share": 100},
+    "红利低波": {"keywords": ["红利低波"],                  "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 6, "phase": "ACC", "amount_per_share": 100, "link": ""},
+    "自由现金流": {"keywords": ["现金流"],                  "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 6, "phase": "ACC", "amount_per_share": 100, "link": ""},
     # A股二级债基增强
-    "二级债基-景颐招利": {"keywords": ["景颐招利"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 30, "phase": "ACC", "amount_per_share": 300},
-    "二级债基-瑞锦混合": {"keywords": ["瑞锦混合"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 8, "phase": "ACC", "amount_per_share": 300},
-    "二级债基-安阳债券": {"keywords": ["安阳债券"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 5, "phase": "ACC", "amount_per_share": 300},
+    "二级债基-景颐招利": {"keywords": ["景颐招利"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 30, "phase": "ACC", "amount_per_share": 300, "link": "http://www.f5.igwfmc.com/main/jjcp/product/010011/detail.html"},
+    "二级债基-瑞锦混合": {"keywords": ["瑞锦混合"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 8, "phase": "ACC", "amount_per_share": 300, "link": ""},
+    "二级债基-安阳债券": {"keywords": ["安阳债券"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 5, "phase": "ACC", "amount_per_share": 300, "link": ""},
     # A股短债增强
-    "现金2-景颐裕利": {"keywords": ["景颐裕利"],           "vol_coef": 99, "entry": "2026-04-16", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0},
-    "现金1-鼎泓债券": {"keywords": ["鼎泓债券"],           "vol_coef": 99, "entry": "2026-04-16", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0},
-    "现金短债": {"keywords": [],                         "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 3, "phase": "ACC", "amount_per_share": 0},
+    "现金2-景颐裕利": {"keywords": ["景颐裕利"],           "vol_coef": 99, "entry": "2026-04-16", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "link": ""},
+    "现金1-鼎泓债券": {"keywords": ["鼎泓债券"],           "vol_coef": 99, "entry": "2026-04-16", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "link": ""},
+    "现金短债": {"keywords": [],                         "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 3, "phase": "ACC", "amount_per_share": 0, "link": ""},
     ########
     # A股，逢低布局
-    "证券公司": {"keywords": ["证券公司"],        "vol_coef": 1.0, "entry": "2026-04-10", "target_ratio": 0, "phase": "FIX", "amount_per_share": 0},
-    "主要消费红利": {"keywords": ["消费红利"],    "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 0, "phase": "FIX", "amount_per_share": 0},   # 008929 低估
-    "中证A500": {"keywords": ["A500"],           "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
-    "中证1000": {"keywords": ["1000"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
-    "创业板": {"keywords": ["创业板"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
-    "科创50": {"keywords": ["科创50"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
-    "有色金属": {"keywords": ["有色金属"],        "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
-    "半导体": {"keywords": ["半导体"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
-    "中证医疗": {"keywords": ["医疗"],           "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},  # 008929 低估
+    "证券公司": {"keywords": ["证券公司"],        "vol_coef": 1.0, "entry": "2026-04-10", "target_ratio": 0, "phase": "FIX", "amount_per_share": 0, "link": ""},
+    "主要消费红利": {"keywords": ["消费红利"],    "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 0, "phase": "FIX", "amount_per_share": 0, "link": ""},   # 008929 低估
+    "中证A500": {"keywords": ["A500"],           "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},
+    "中证1000": {"keywords": ["1000"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},
+    "创业板": {"keywords": ["创业板"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},
+    "科创50": {"keywords": ["科创50"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},
+    "有色金属": {"keywords": ["有色金属"],        "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},
+    "半导体": {"keywords": ["半导体"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},
+    "中证医疗": {"keywords": ["医疗"],           "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},  # 008929 低估
     # 港股，逢低布局
-    "恒生科技": {"keywords": ["恒生科技"],        "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 0, "phase": "FIX", "amount_per_share": 0},  # 020989 低估
-    "港股通信息技术": {"keywords": ["信息技术"],   "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},   # 026755 适中
-    "港股通创新药": {"keywords": ["创新药"],      "vol_coef": 1.1, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
+    "恒生科技": {"keywords": ["恒生科技"],        "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 0, "phase": "FIX", "amount_per_share": 0, "link": ""},  # 020989 低估
+    "港股通信息技术": {"keywords": ["信息技术"],   "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},   # 026755 适中
+    "港股通创新药": {"keywords": ["创新药"],      "vol_coef": 1.1, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},
     # 商品
-    "黄金": {"keywords": ["黄金", "上海金"],      "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
-    "其他": {"keywords": [],                     "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0},
+    "黄金": {"keywords": ["黄金", "上海金"],      "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},
+    "其他": {"keywords": [],                     "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},
 }
 
 # ==================== 定投份数计算规则 ====================
@@ -1053,8 +1060,13 @@ def daily_financial_report(param=None):
 
         # 追加持仓体检分析
         health_prompt = _build_position_health_prompt()
-        full_prompt = news_prompt + health_prompt
 
+        # 追加风险预警区
+        risk_prompt = news_fetcher.generate_risk_warning_prompt()
+
+        full_prompt = news_prompt + health_prompt + risk_prompt
+        news_fetcher.save_prompt(full_prompt)
+        
         llm_analyzer = LLMNewsAnalyzer()
         report = llm_analyzer.analyze(full_prompt)
         return f"📰 **当日财经新闻报告**\n\n{report}"
