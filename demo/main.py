@@ -30,66 +30,91 @@ from fund_positions import from_positions, mulfix_pos
 #                         增量资金忽略短债份额，优先补足权益仓位。如增量资金无法补足，等待月度平衡权益仓位，短债保持空仓。
 #                         对应基金单月反弹≥10% 后，恢复常规规则，增量资金重新优先补足短债。
 
-### 50% ###
-# 现金3级： 短债，华夏鼎泓债券，景颐裕利   6+2+2=10% 
-# A股固收+：景颐招利，瑞锦混合，安阳债券  30+5+5=40%
-### 25% ###
-# A股固收+卫星：中证红利低波(股息4以上)    6% 
-# A股价值卫星: 国证自由现金流             6% 
-# AH股主动价值: 大成高鑫 (刘旭)           6%
-#              中欧红利优享 (蓝小康)      4%
-# A股主动成长: 兴全合润 (谢志宇)          3%
-### 25% ###
-# 美股被动成长: 标普500                    3%
-#              纳指100                   10%
-# 美股主动成长: 易方达全球优质企业 (李剑锋)  5%
-#              广发全球精选 (李耀柱)       5%
+
+### 52% ###
+# 现金3级： 短债，华夏鼎泓债券，景颐裕利   5+2+2=9%
+# A股固收+：景颐招利，易方达瑞锦，安阳债券  27+12+6=43%
+### 20% ###  进一步分散到个人
+# A股被动价值: 红利低波                   2%
+#             国证自由现金流             2%  
+#             国证价值100                4%
+# A股主动价值: 大成高鑫 (刘旭)            2%
+#             中欧红利优享 (蓝小康)       2%
+#             招商匠心优选 (李崟)         2%
+#             招商量化精选 (王平)         2%
+#             中泰星元 (姜诚)             2%
+#             广发多因子 (唐晓斌)         2%
+### 28% 主力进攻矛1 ###
+# 美股被动成长: 纳指100                   10%
+#              标普500                    2%
+# 美股主动成长: 易方达全球优质企业 (李剑锋)  2%
 #              易方达全球成长精选 (郑希)    2%
+#              广发全球精选 (李耀柱)       2%
+#              天弘全球高端制造混合 (刘东)  2%
+#              华夏全球科技先锋 (李湘杰)    2%
+#              国富全球科技互联 (徐成)      2%
+# 欧州主动成长: 摩根欧洲动力策略 (张军)      4%
+
 ###########
+# 工银印度基金人民币 2% 卢比贬值严重，完美命中20年到24年的高低位，也就12%的年化。
+
+# A股主动价值备选：鹏华盛世创新（伍旋）         2%
+#                安信新常态（袁玮）           2%
+# A股主动成长: 兴全合润 (谢治宇)
 
 # "类别": {"keywords": ["基金名称里的关键词"]，"entry": "实际开始定投日期, 
 #          "target_ratio": 目标份额比例, "vol_coef": 波动系数(直接乘以加仓阈值，波动越大，触发加仓越难)"},
 # "target_ratio": 0 表示暂不持仓；二级债基/全球主动和黄金只做手动加仓。
 category_config = {
-    # 美股，低估或跌了加快建仓，回涨时转向固收+。高估减半止盈。等估值被打下来后继续快速加仓。
-    "标普500": {"keywords": ["标普500"],                 "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 3, "phase": "ACC", "amount_per_share": 0, "link": ""},  #  017641 适中
-    "纳斯达克100": {"keywords": ["纳斯达克100"],          "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 10, "phase": "ACC", "amount_per_share": 0, "link": ""},  # 012752 适中
-    "美股主动-全球优质企业": {"keywords": ["全球优质企业"], "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 5, "phase": "ACC", "amount_per_share": 200, "link": ""},  # 100 + 50
-    "美股主动-广发全球精选": {"keywords": ["广发全球精选"], "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 5, "phase": "ACC", "amount_per_share": 200, "link": ""},  # 100 + 50
-    "美股主动-全球成长精选": {"keywords": ["全球成长精选"], "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 200, "link": ""},  # 100 + 50
-    # AH股主动
-    "A股价值主动-大成高鑫": {"keywords": ["大成高鑫"],       "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 6, "phase": "ACC", "amount_per_share": 100, "link": ""},
-    "A股价值主动-中欧红利": {"keywords": ["中欧红利"],       "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 4, "phase": "ACC", "amount_per_share": 100, "link": ""},
-    "A股成长主动-兴全合润": {"keywords": ["兴全合润"],       "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 3, "phase": "ACC", "amount_per_share": 100, "link": ""},
-    # A股固收+卫星
-    "红利低波": {"keywords": ["红利低波"],                  "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 6, "phase": "ACC", "amount_per_share": 100, "link": ""},
-    "自由现金流": {"keywords": ["现金流"],                  "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 6, "phase": "ACC", "amount_per_share": 100, "link": ""},
+    # 美股
+    "美股被动成长-标普500": {"keywords": ["标普500"],               "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 2, "phase": "WATCH", "amount_per_share": 0, "code": "017641", "link": ""},
+    "美股被动成长-纳指100": {"keywords": ["纳斯达克100"],            "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 10, "phase": "ACC", "amount_per_share": 0, "code": "016452", "link": ""},
+    "美股主动成长-易方达全球优质": {"keywords": ["易方达全球优质"],    "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 200, "code": "018229", "link": "https://www.efunds.com.cn/fund/018229.shtml"},
+    "美股主动成长-易方达全球成长": {"keywords": ["易方达全球成长"],    "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 200, "code": "018229", "link": "https://www.efunds.com.cn/fund/012920.shtml"},
+    "美股主动成长-广发全球精选": {"keywords": ["广发全球精选"],        "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 2, "phase": "ACC", "amount_per_share": 200, "code": "270023", "link": "https://www.gffunds.com.cn/funds/?fundcode=270023&fromSearch=1"},
+    "美股主动成长-天弘全球高端制造": {"keywords": ["天弘全球高端制造"], "vol_coef": 1.0, "entry": "2026-04-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "", "link": ""},
+    "美股主动成长-华夏全球科技": {"keywords": ["华夏全球科技"],        "vol_coef": 1.0, "entry": "2026-04-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "", "link": ""},
+    "美股主动成长-国富全球科技": {"keywords": ["国富全球科技"],        "vol_coef": 1.0, "entry": "2026-04-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "", "link": ""},
+    # 欧股
+    "欧洲主动成长-摩根欧洲动力": {"keywords": ["摩根欧洲动力"],        "vol_coef": 1.0, "entry": "2026-04-20", "target_ratio": 4, "phase": "ACC", "amount_per_share": 0, "code": "", "link": ""},
+    # A股主动价值
+    "A股主动价值-大成高鑫": {"keywords": ["大成高鑫"],         "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "000628", "link": "https://www.dcfund.com.cn/main/fund/productdetail/index.shtml?product_code=000628"},
+    "A股主动价值-中欧红利": {"keywords": ["中欧红利"],         "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "004814", "link": "https://www.zofund.com/index2015/004814.shtml"},
+    "A股主动价值-招商匠心优选": {"keywords": ["招商匠心优选"],  "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "", "link": ""},
+    "A股主动价值-招商量化精选": {"keywords": ["招商量化精选"],  "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "", "link": ""},
+    "A股主动价值-中泰星元": {"keywords": ["中泰星元"],         "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "", "link": ""},
+    "A股主动价值-广发多因子": {"keywords": ["广发多因子"],      "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "", "link": ""},
+    # A股被动价值
+    "A股被动价值-国证自由现金流": {"keywords": ["自由现金流"],  "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "023917", "link": ""},
+    "A股被动价值-国证价值100": {"keywords": ["价值100"],       "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 4, "phase": "ACC", "amount_per_share": 100, "code": "023917", "link": ""},
+    "A股被动价值-红利低波": {"keywords": ["红利低波"],         "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "020602", "link": ""},
     # A股二级债基增强
-    "二级债基-景颐招利": {"keywords": ["景颐招利"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 30, "phase": "ACC", "amount_per_share": 300, "link": "http://www.f5.igwfmc.com/main/jjcp/product/010011/detail.html"},
-    "二级债基-瑞锦混合": {"keywords": ["瑞锦混合"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 8, "phase": "ACC", "amount_per_share": 300, "link": ""},
-    "二级债基-安阳债券": {"keywords": ["安阳债券"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 5, "phase": "ACC", "amount_per_share": 300, "link": ""},
+    "二级债基-景颐招利": {"keywords": ["景颐招利"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 25, "phase": "ACC", "amount_per_share": 300, "code": "0100011", "link": "http://www.f5.igwfmc.com/main/jjcp/product/010011/detail.html"},
+    "二级债基-易方达瑞锦": {"keywords": ["易方达瑞锦"],     "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 12, "phase": "ACC", "amount_per_share": 300, "code": "009690", "link": "https://www.efunds.com.cn//fund/009690.shtml"},
+    "二级债基-招商安阳": {"keywords": ["招商安阳"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 8, "phase": "ACC", "amount_per_share": 300, "code": "010430", "link": "https://www.cmfchina.com/web/fundDetail/010430/index.html"},
     # A股短债增强
-    "现金2-景颐裕利": {"keywords": ["景颐裕利"],           "vol_coef": 99, "entry": "2026-04-16", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "link": ""},
-    "现金1-鼎泓债券": {"keywords": ["鼎泓债券"],           "vol_coef": 99, "entry": "2026-04-16", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "link": ""},
-    "现金短债": {"keywords": [],                         "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 3, "phase": "ACC", "amount_per_share": 0, "link": ""},
+    "现金2-景颐裕利": {"keywords": ["景颐裕利"],           "vol_coef": 99, "entry": "2026-04-16", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "018736", "link": "http://www.f5.igwfmc.com/main/jjcp/product/018736/detail.html"},
+    "现金1-华夏鼎泓": {"keywords": ["华夏鼎泓"],           "vol_coef": 99, "entry": "2026-04-16", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "007666", "link": "https://www.chinaamc.com/fund/007666/index.shtml"},
+    "现金短债": {"keywords": [],                         "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 5, "phase": "ACC", "amount_per_share": 0, "code": "", "link": ""},
     ########
-    # A股，逢低布局
-    "证券公司": {"keywords": ["证券公司"],        "vol_coef": 1.0, "entry": "2026-04-10", "target_ratio": 0, "phase": "FIX", "amount_per_share": 0, "link": ""},
-    "主要消费红利": {"keywords": ["消费红利"],    "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 0, "phase": "FIX", "amount_per_share": 0, "link": ""},   # 008929 低估
-    "中证A500": {"keywords": ["A500"],           "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},
-    "中证1000": {"keywords": ["1000"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},
-    "创业板": {"keywords": ["创业板"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},
-    "科创50": {"keywords": ["科创50"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},
-    "有色金属": {"keywords": ["有色金属"],        "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},
-    "半导体": {"keywords": ["半导体"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},
-    "中证医疗": {"keywords": ["医疗"],           "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},  # 008929 低估
+    # 备选池
+    "A股成长主动-兴全合润": {"keywords": ["兴全合润"],    "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 100, "code": "163406", "link": ""},
+    "证券公司": {"keywords": ["证券公司"],        "vol_coef": 1.0, "entry": "2026-04-10", "target_ratio": 0, "phase": "FIX", "amount_per_share": 0, "code": "007993", "link": ""},
+    "主要消费红利": {"keywords": ["消费红利"],    "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 0, "phase": "FIX", "amount_per_share": 0, "code": "008929", "link": ""},   # 008929 低估
+    "中证A500": {"keywords": ["A500"],           "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "code": "", "link": ""},
+    "中证1000": {"keywords": ["1000"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "code": "", "link": ""},
+    "创业板": {"keywords": ["创业板"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "code": "", "link": ""},
+    "科创50": {"keywords": ["科创50"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "code": "", "link": ""},
+    "有色金属": {"keywords": ["有色金属"],        "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "code": "", "link": ""},
+    "半导体": {"keywords": ["半导体"],           "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "code": "", "link": ""},
+    "中证医疗": {"keywords": ["医疗"],           "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "code": "", "link": ""},  # 008929 低估
     # 港股，逢低布局
-    "恒生科技": {"keywords": ["恒生科技"],        "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 0, "phase": "FIX", "amount_per_share": 0, "link": ""},  # 020989 低估
-    "港股通信息技术": {"keywords": ["信息技术"],   "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},   # 026755 适中
-    "港股通创新药": {"keywords": ["创新药"],      "vol_coef": 1.1, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},
+    "恒生科技": {"keywords": ["恒生科技"],        "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 0, "phase": "FIX", "amount_per_share": 0, "code": "020989", "link": ""},  # 020989 低估
+    "港股通信息技术": {"keywords": ["信息技术"],   "vol_coef": 1.2, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "code": "", "link": ""},   # 026755 适中
+    "港股通创新药": {"keywords": ["创新药"],      "vol_coef": 1.1, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "code": "", "link": ""},
     # 商品
-    "黄金": {"keywords": ["黄金", "上海金"],      "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},
-    "其他": {"keywords": [],                     "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "link": ""},
+    "黄金": {"keywords": ["黄金", "上海金"],      "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "code": "", "link": ""},
+    "其他": {"keywords": [],                     "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "code": "", "link": ""},
 }
 
 # ==================== 定投份数计算规则 ====================
@@ -561,6 +586,179 @@ def create_fund_trend_chart(fund_code="019547"):
         return None
 
 
+def calc_acc_funds_yoy() -> str:
+    """计算并返回所有ACC基金每年今日涨跌情况，用表格展示"""
+    today = pd.Timestamp.today().normalize()
+    # 近4年今日（今日、近1年、近2年、近3年、近4年）
+    date_points = [today - pd.DateOffset(years=y) for y in [0, 1, 2, 3, 4]]
+
+    col_headers = ["基金名称"] + [d.strftime("%Y-%m-%d") for d in date_points]
+
+    acc_codes = []
+    for cat_name, config in category_config.items():
+        if config.get("phase") == "ACC" and config.get("code"):
+            acc_codes.append((cat_name, config["code"]))
+
+    rows = []
+    for cat_name, code in acc_codes:
+        try:
+            df = ak.fund_open_fund_info_em(symbol=code, indicator="单位净值走势")
+            df['净值日期'] = pd.to_datetime(df['净值日期'])
+            df = df.sort_values('净值日期', ascending=True).reset_index(drop=True)
+            df['单位净值'] = pd.to_numeric(df['单位净值'], errors='coerce')
+            df = df.dropna(subset=['单位净值'])
+            df['净值日期'] = df['净值日期'].dt.normalize()
+
+            nav_map = dict(zip(df['净值日期'], df['单位净值']))
+            min_date = df['净值日期'].min()
+
+            def get_nav(dp):
+                """获取指定日期或之前最近的可交易日净值"""
+                if dp < min_date:
+                    return None
+                avail = sorted([d for d in nav_map if d <= dp])
+                return nav_map[avail[-1]] if avail else None
+
+            row_data = [f"{cat_name} ({code})"]
+            prev_nav = None
+            for dp in date_points:
+                nav = get_nav(dp)
+                if nav is None:
+                    row_data.append("---")
+                    prev_nav = None
+                elif prev_nav is None:
+                    # 今日列：只显示净值，不显示涨跌
+                    row_data.append(f"{nav:.4f}")
+                    prev_nav = nav
+                else:
+                    # 历史列：净值 + 较前一年今日的涨跌
+                    chg = (nav / prev_nav - 1) * 100
+                    sign = "+" if chg >= 0 else ""
+                    row_data.append(f"{nav:.4f} ({sign}{chg:.2f}%)")
+                    prev_nav = nav
+            rows.append(row_data)
+        except Exception as e:
+            rows.append([f"{cat_name} ({code})"] + ["获取失败"] * (len(col_headers) - 1))
+
+    # 构建 Markdown 表格
+    header_line = "| " + " | ".join(col_headers) + " |"
+    sep_line = "| " + " | ".join(["---"] * len(col_headers)) + " |"
+    lines = [f"## 📊 ACC基金年度涨跌（各年度今日净值 vs 去年同期）\n"]
+    lines.append(f"**基准日期**: {today.strftime('%Y-%m-%d')}\n\n")
+    lines.append(header_line + "\n" + sep_line + "\n")
+    for r in rows:
+        lines.append("| " + " | ".join(r) + " |")
+    return "\n".join(lines)
+
+
+def create_acc_funds_trend_chart(years=1):
+    """创建所有ACC基金的历史走势对比图（近1年累计涨跌幅%），同一日内从缓存读取"""
+    try:
+        cache_dir = ".cache"
+        os.makedirs(cache_dir, exist_ok=True)
+        today_str = pd.Timestamp.today().strftime("%Y%m%d")
+        cache_file = os.path.join(cache_dir, f"acc_trend_{today_str}.pkl")
+
+        if os.path.exists(cache_file):
+            try:
+                fund_series = pd.read_pickle(cache_file)
+                print(f"✅ 历史涨跌缓存命中: {cache_file}，共 {len(fund_series)} 只基金")
+            except Exception:
+                fund_series = None
+            if fund_series is None:
+                fund_series = _fetch_acc_fund_series(years)
+        else:
+            fund_series = _fetch_acc_fund_series(years)
+            if fund_series:
+                pd.to_pickle(fund_series, cache_file)
+                print(f"💾 历史涨跌已缓存: {cache_file}")
+
+        if not fund_series:
+            return None
+
+        common_start = max(s["df"]['净值日期'].min() for s in fund_series)
+        for s in fund_series:
+            s["df"] = s["df"][s["df"]['净值日期'] >= common_start]
+
+        all_dates = sorted(set().union(*[s["df"]['净值日期'].tolist() for s in fund_series]))
+        date_labels = [d.strftime('%Y-%m-%d') for d in all_dates]
+
+        chart = Line(init_opts=opts.InitOpts(width="100%", height="500px", theme=ThemeType.MACARONS, bg_color="#1a1a1a"))
+        chart.add_xaxis(date_labels)
+
+        for s in fund_series:
+            df_merged = s["df"].set_index("净值日期").reindex(all_dates)
+            raw = df_merged['norm'].ffill().bfill().tolist()
+            first_val = next((v for v in raw if v is not None and not (isinstance(v, float) and v != v)), None)
+            if first_val is not None:
+                values = [round(v - first_val, 4) if v is not None and not (isinstance(v, float) and v != v) else None for v in raw]
+            else:
+                values = raw
+            display_name = f"{s['cat'][:8]}({s['code']})"
+            chart.add_yaxis(display_name, values, is_symbol_show=False,
+                            linestyle_opts=opts.LineStyleOpts(width=1.5))
+
+        chart.set_global_opts(
+            title_opts=opts.TitleOpts(title="ACC基金历史走势对比（近1年累计涨跌幅%）",
+                                      title_textstyle_opts=opts.TextStyleOpts(color="#FFFFFF")),
+            tooltip_opts=opts.TooltipOpts(trigger="axis"),
+            legend_opts=opts.LegendOpts(pos_top="5%", textstyle_opts=opts.TextStyleOpts(color="#CCCCCC")),
+            xaxis_opts=opts.AxisOpts(name="日期", name_textstyle_opts=opts.TextStyleOpts(color="#CCCCCC"),
+                                      axislabel_opts=opts.LabelOpts(color="#CCCCCC")),
+            yaxis_opts=opts.AxisOpts(name="累计涨跌幅%", name_textstyle_opts=opts.TextStyleOpts(color="#CCCCCC"),
+                                      axislabel_opts=opts.LabelOpts(color="#CCCCCC"),
+                                      splitline_opts=opts.SplitLineOpts(is_show=True, linestyle_opts=opts.LineStyleOpts(color="#333333"))),
+        )
+        chart.set_series_opts(label_opts=opts.LabelOpts(is_show=False))
+        return chart
+    except Exception as e:
+        print(f"历史涨跌图表生成失败: {e}")
+        return None
+
+
+def _fetch_acc_fund_series(years=1):
+    """从 akshare 拉取ACC基金数据，返回 fund_series 列表（供缓存用）"""
+    acc_codes = []
+    for cat_name, config in category_config.items():
+        if config.get("phase") == "ACC" and config.get("code"):
+            acc_codes.append((cat_name, config["code"]))
+
+    if not acc_codes:
+        return []
+
+    cutoff_date = pd.Timestamp.today().normalize() - timedelta(days=years * 365)
+    fund_series = []
+
+    for cat_name, code in acc_codes:
+        try:
+            df = ak.fund_open_fund_info_em(symbol=code, indicator="单位净值走势")
+            df['净值日期'] = pd.to_datetime(df['净值日期'])
+            df = df.sort_values('净值日期', ascending=True).reset_index(drop=True)
+            df['单位净值'] = pd.to_numeric(df['单位净值'], errors='coerce')
+            df = df.dropna(subset=['单位净值'])
+
+            if df.empty:
+                continue
+
+            df = df[df['净值日期'] >= cutoff_date].copy()
+
+            if len(df) < 10:
+                continue
+
+            base_nav = df['单位净值'].iloc[0]
+            df['norm'] = (df['单位净值'] / base_nav - 1) * 100
+
+            fund_series.append({
+                "cat": cat_name,
+                "code": code,
+                "df": df[['净值日期', 'norm']].copy()
+            })
+        except:
+            continue
+
+    return fund_series
+
+
 # ==================== 数字功能函数 ====================
 def fund_pos_detail():
     try:
@@ -610,7 +808,9 @@ def fund_pos_change_stat():
             # 只列出 phase 为 ACC 的基金
             if category_config.get(cat_name, {}).get("phase") != "ACC":
                 continue
-            funds_to_show = funds if cat_name == "二级债基" else funds[:1]
+            # 提取基础分类（如"二级债基"从"二级债基-景颐招利"）
+            base_cat = cat_name.split("-")[0] if "-" in cat_name else cat_name
+            funds_to_show = funds if base_cat == "二级债基" else funds[:1]
             for idx, fund in enumerate(funds_to_show):
                 try:
                     df = get_fund_data(fund["code"])
@@ -719,9 +919,9 @@ def fund_pos_change_stat():
                         ratio_dev = None
 
                     # 二级债基第一个基金直接填入amount_per_share
-                    is_bond_first = (vol_coef >= 99 and cat_name == "二级债基" and idx == 0)
+                    is_bond_first = (vol_coef >= 99 and base_cat == "二级债基" and idx == 0)
 
-                    table_data.append({"category": cat_name, "code": fund["code"], "name": fund["name"],
+                    table_data.append({"base_cat": base_cat, "full_cat": cat_name, "code": fund["code"], "name": fund["name"],
                                        "drawdown": drawdown, "peak_date": peak_date, "one_day_date": one_day_date,
                                        "change_1d": change_1d, "change_5_avg": change_5_avg, "change_10_avg": change_10_avg,
                                        "change_20_avg": change_20_avg, "change_60_avg": change_60_avg,
@@ -731,6 +931,9 @@ def fund_pos_change_stat():
                                        "is_bond_first": is_bond_first})
                 except:
                     continue
+
+        # 按基础分类排序
+        table_data.sort(key=lambda x: x["base_cat"])
 
         if not table_data:
             return "❌ 无法获取任何基金数据"
@@ -851,20 +1054,20 @@ def fund_pos_change_stat():
                 ratio_str = format_percentage(ratio_dev * 100, color_mode=True) + f' <span style="color: gray;">({item["current_ratio"]:.2f}%/{item["target_ratio"]}%)</span>'
             # 日定投金额（按分类计算，正=买入，负=卖出）
             # cat_daily_invest 是百分点，需转为元
-            daily_inv_pct = cat_daily_invest.get(item["category"], 0)
+            daily_inv_pct = cat_daily_invest.get(item["full_cat"], 0)
             daily_inv_yuan = daily_inv_pct * grand_total / 100
             abs_daily_yuan = abs(daily_inv_yuan)
             # 百分比基于总再平衡金额（卖出=买入，各占50%）
             pct_of_total = abs_daily_yuan / (total_daily * grand_total / 100 * 2) * 100 if total_daily > 0 else 0
             amount_str = format_rebalance_yuan(daily_inv_yuan, pct_of_total)
             # 月后偏离
-            post_dev = cat_post_dev.get(item["category"], None)
-            new_ratio = cat_new_ratio.get(item["category"], None)
+            post_dev = cat_post_dev.get(item["full_cat"], None)
+            new_ratio = cat_new_ratio.get(item["full_cat"], None)
             if post_dev is None or new_ratio is None:
                 post_dev_str = "---"
             else:
                 post_dev_str = format_percentage(post_dev * 100, color_mode=True) + f' <span style="color: gray;">({new_ratio:.2f}%/{item["target_ratio"]}%)</span>'
-            result += f"| {item['category']} | {item['code']} | {item['name']} | {amount_str} | {post_dev_str} | {ratio_str} | {change_1d_full} | {change_5_str} | {change_10_str} | {change_20_str} | {change_60_str} | {since_entry_str} | {dd_str} |\n"
+            result += f"| {item['base_cat']} | {item['code']} | {item['name']} | {amount_str} | {post_dev_str} | {ratio_str} | {change_1d_full} | {change_5_str} | {change_10_str} | {change_20_str} | {change_60_str} | {since_entry_str} | {dd_str} |\n"
 
         # 现金短债单独一行
         cash_target = category_config.get("现金短债", {}).get("target_ratio", 0)
@@ -1346,9 +1549,9 @@ def dca_backtest(fund_code=None, start_date=None, end_date=None, amount_per_shar
 
 
 def func_6():
-    return f"📋 **数据示例**\n\n1. 随机数: {', '.join(map(str, [random.randint(1, 100) for _ in range(5)]))}\n" \
-           f"2. 时间戳: {int(datetime.now().timestamp())}\n" \
-           f"3. 随机选择: {random.choice(['Python', 'Gradio', 'Pyecharts', 'xalpha'])}"
+    return (f"🔗 股债利差(小于3需警惕): http://www.dashiyetouzi.com/tools/compare/hs300_10gz_pro.php\n\n"
+            f"🔗 A股拥挤度(大于45%需警惕): https://legulegu.com/stockdata/ashares-congestion\n\n"
+            f"🔗 北向资金流向: http://wdatacn.aastocks.com/sc/cnhk/market/quota-balance/")
 
 
 # 功能映射
@@ -1358,7 +1561,7 @@ FUNCTIONS_MAP = {
     "3": {"func": daily_financial_report, "desc": "当日财经报告", "emoji": "🎲", "has_param": True, "param_desc": "3 20260403"},
     "4": {"func": fund_pos_detail, "desc": "持仓组合摘要", "emoji": "📊", "has_param": False},
     "5": {"func": trade_records_detail, "desc": "基金申购赎回明细", "emoji": "💻", "has_param": False},
-    "6": {"func": func_6, "desc": "数据示例", "emoji": "📋", "has_param": False},
+    "6": {"func": func_6, "desc": "风向指标", "emoji": "📋", "has_param": False},
 }
 
 
@@ -1366,6 +1569,7 @@ def build_charts(selected_types, fund_code="019547"):
     charts_map = {
         "持仓分布": create_fund_pos_ratio_chart,
         "申购记录": create_trade_records_charts,
+        "历史涨跌": lambda: create_acc_funds_trend_chart(years=1),
         "股债利差": create_erp_chart,
         "基金详情": lambda: create_fund_trend_chart(fund_code)
     }
@@ -1391,16 +1595,18 @@ with gr.Blocks(title="基金数据看板", theme=gr.themes.Soft()) as demo:
             gr.Markdown("**图表类型**")
             chart_1 = gr.Checkbox(label="持仓分布", value=True)
             chart_2 = gr.Checkbox(label="申购记录", value=False)
-            chart_3 = gr.Checkbox(label="股债利差", value=False)
-            chart_4 = gr.Checkbox(label="基金详情", value=False)
+            chart_3 = gr.Checkbox(label="历史涨跌", value=False)
+            chart_4 = gr.Checkbox(label="股债利差", value=False)
+            chart_5 = gr.Checkbox(label="基金详情", value=False)
             fund_code_input = gr.Textbox(label="基金代码", value="019547", lines=1)
 
-            def combine_charts(c1, c2, c3, c4):
+            def combine_charts(c1, c2, c3, c4, c5):
                 selected = []
                 if c1: selected.append("持仓分布")
                 if c2: selected.append("申购记录")
-                if c3: selected.append("股债利差")
-                if c4: selected.append("基金详情")
+                if c3: selected.append("历史涨跌")
+                if c4: selected.append("股债利差")
+                if c5: selected.append("基金详情")
                 return selected
 
             generate_btn = gr.Button("🎨 生成图表", variant="primary")
@@ -1423,17 +1629,20 @@ with gr.Blocks(title="基金数据看板", theme=gr.themes.Soft()) as demo:
             chatbot = gr.Chatbot(label="执行结果", height=600)
             chat_history = gr.State([])
 
-    def generate_charts_with_detail(a, b, c, d, code, history):
-        selected = combine_charts(a, b, c, d)
+    def generate_charts_with_detail(a, b, c, d, e, code, history):
+        selected = combine_charts(a, b, c, d, e)
         chart_html = build_charts(selected, code)
-        if d and code:
+        if c:
+            yoy = calc_acc_funds_yoy()
+            history = history + [{"role": "user", "content": "📊 ACC基金年度涨跌"}, {"role": "assistant", "content": yoy}]
+        if e and code:
             detail = get_fund_detail(code)
             history = history + [{"role": "user", "content": f"📈 基金详情 ({code})"}, {"role": "assistant", "content": detail}]
         return chart_html, history, history
 
     generate_btn.click(
         fn=generate_charts_with_detail,
-        inputs=[chart_1, chart_2, chart_3, chart_4, fund_code_input, chat_history],
+        inputs=[chart_1, chart_2, chart_3, chart_4, chart_5, fund_code_input, chat_history],
         outputs=[chart_output, chatbot, chat_history]
     )
 
