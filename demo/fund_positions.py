@@ -154,20 +154,40 @@ class mulfix_pos:
         df_acc = df[df["phase"] == "ACC"].copy()
         df_other = df[df["phase"] != "ACC"].copy()
 
-        # 汇总ACC分类
-        outer_df = df_acc.groupby("分类").agg({
-            "参考市值": "sum",
-            "目标占比": "first"
-        }).reset_index()
+        # 提取基础分类（"债基防御层-景颐招利" -> "债基防御层"）
+        def get_base_category(cat):
+            return cat.split("-")[0] if "-" in cat else cat
+
+# 汇总ACC分类（按基础分类聚合）
+        df_acc["基础分类"] = df_acc["分类"].apply(get_base_category)
+
+        # 市值用全部ACC基金，目标比例按"基础分类+完整分类"去重后累加（避免同一基金多次建仓导致重复计算）
+        base_cat_summary = {}
+        seen_full_cat = {}  # {基础分类: set(完整分类)}
+        for _, row in df_acc.iterrows():
+            base = row["基础分类"]
+            full_cat = row["分类"]
+            if base not in base_cat_summary:
+                base_cat_summary[base] = {"参考市值": 0, "目标占比": 0}
+                seen_full_cat[base] = set()
+            base_cat_summary[base]["参考市值"] += row["参考市值"]
+            if row["目标占比"] > 0 and full_cat not in seen_full_cat[base]:
+                base_cat_summary[base]["目标占比"] += row["目标占比"]
+                seen_full_cat[base].add(full_cat)
+
+        outer_data = []
+        for base, vals in base_cat_summary.items():
+            outer_data.append({"基础分类": base, "参考市值": vals["参考市值"], "目标占比": vals["目标占比"]})
+        outer_df = pd.DataFrame(outer_data)
 
         # 非ACC归入"其他"
         other_mv = df_other["参考市值"].sum()
         if other_mv > 0:
-            outer_df.loc[len(outer_df)] = {"分类": "其他", "参考市值": other_mv, "目标占比": 0}
+            outer_df = pd.concat([outer_df, pd.DataFrame([{"基础分类": "其他", "参考市值": other_mv, "目标占比": 0}])], ignore_index=True)
 
         # 加入现金
         if cash > 0:
-            outer_df.loc[len(outer_df)] = {"分类": "现金短债", "参考市值": cash, "目标占比": category_config["现金短债"]["target_ratio"]}
+            outer_df = pd.concat([outer_df, pd.DataFrame([{"基础分类": "现金短债", "参考市值": cash, "目标占比": category_config["现金短债"]["target_ratio"]}])], ignore_index=True)
 
         total_value = outer_df["参考市值"].sum()
 
@@ -175,7 +195,7 @@ class mulfix_pos:
         outer_data_with_label = []
         outer_name_map = {}
         for _, row in outer_df.iterrows():
-            short_name = row["分类"]
+            short_name = row["基础分类"]
             value = int(round(row["参考市值"]))
             percent = (value / total_value * 100) if total_value > 0 else 0
             target = row["目标占比"]

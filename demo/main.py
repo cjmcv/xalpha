@@ -30,11 +30,11 @@ from fund_positions import from_positions, mulfix_pos
 #                         增量资金忽略短债份额，优先补足权益仓位。如增量资金无法补足，等待月度平衡权益仓位，短债保持空仓。
 #                         对应基金单月反弹≥10% 后，恢复常规规则，增量资金重新优先补足短债。
 
-
-### 50% ###
-# 现金3级： 短债，华夏鼎泓债券，景颐裕利   5+2+2=9%
-# A股固收+：景颐招利，易方达瑞锦，安阳债券  25+12+6=41%
-### 20% 价值类固收增强，风格分散 ### 
+### 48% 债基防御层 ###
+# 现金3级:   短债，华夏鼎泓债券，景颐裕利      4+2+2=8%
+# A股固收+:  景颐招利，易方达瑞锦，安阳债券  25+10+5=40%
+#
+### 20% 价值稳健层 ### 
 # A股被动价值: 红利低波                   2%
 #             国证自由现金流             2%
 #             国证价值100                2%
@@ -45,8 +45,14 @@ from fund_positions import from_positions, mulfix_pos
 #             中泰星元 (姜诚)             2%
 #             广发多因子 (唐晓斌)         2%
 #             鹏华盛世创新（伍旋）         2%
-### 24% 主力进攻矛 ###
-# 美股被动成长: 纳指100                   10%
+#
+### 8% 全球缓冲层 (全球平衡) ###
+# 全球大盘平衡: 摩根全球多元 (张军)         4%
+# 欧股大盘平衡: 摩根欧洲动力 (张军)         2%
+# 日本大盘平衡: 摩根日本精选 (张军)         2%
+#
+### 20% 美股进攻层 ###
+# 美股被动成长: 纳指100                    6%
 #              标普500                    2%
 # 美股主动成长: 易方达全球优质企业 (李剑锋)  2%
 #              易方达全球成长精选 (郑希)    2%
@@ -54,12 +60,13 @@ from fund_positions import from_positions, mulfix_pos
 #              天弘全球高端制造混合 (刘东)  2%
 #              华夏全球科技先锋 (李湘杰)    2%
 #              国富全球科技互联 (徐成)      2%
-### 6% 分散进攻矛 ###
-# 欧股主动成长: 摩根欧洲动力 (张军)         4%
-# 日本主动成长: 摩根日本精选 (张军)         2%
-# 印度主动成长: 工银印度 (张军)             0%
-###########
+#
+### 4% A股进攻层 ###
+# A股主动成长: 兴全合润 (谢治宇)            2%
+#             富国天惠 (朱少醒)            2%
 
+
+###########
 # 工银印度基金人民币 2% 卢比贬值严重，完美命中20年到24年的高低位，也就12%的年化。
 # A股主动成长: 兴全合润 (谢治宇) / 王培 / 朱少醒
 
@@ -67,40 +74,44 @@ from fund_positions import from_positions, mulfix_pos
 #          "target_ratio": 目标份额比例, "vol_coef": 波动系数(直接乘以加仓阈值，波动越大，触发加仓越难)"},
 # "target_ratio": 0 表示暂不持仓；二级债基/全球主动和黄金只做手动加仓。
 category_config = {
-    # 美股
-    "美股被动成长-标普500": {"keywords": ["标普500"],               "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "017641", "link": ""},
-    "美股被动成长-纳指100": {"keywords": ["纳斯达克100"],            "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 10, "phase": "ACC", "amount_per_share": 0, "code": "016452", "link": ""},
-    "美股主动成长-易方达全球优质": {"keywords": ["易方达全球优质"],    "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 200, "code": "018229", "link": "https://www.efunds.com.cn/fund/018229.shtml"},
-    "美股主动成长-易方达全球成长": {"keywords": ["易方达全球成长"],    "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 200, "code": "018229", "link": "https://www.efunds.com.cn/fund/012920.shtml"},
-    "美股主动成长-广发全球精选": {"keywords": ["广发全球精选"],        "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 2, "phase": "ACC", "amount_per_share": 200, "code": "270023", "link": "https://www.gffunds.com.cn/funds/?fundcode=270023&fromSearch=1"},
-    "美股主动成长-天弘全球高端制造": {"keywords": ["天弘全球高端制造"], "vol_coef": 1.0, "entry": "2026-04-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "", "link": ""},
-    "美股主动成长-华夏全球科技": {"keywords": ["华夏全球科技"],        "vol_coef": 1.0, "entry": "2026-04-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "", "link": ""},
-    "美股主动成长-国富全球科技": {"keywords": ["国富全球科技"],        "vol_coef": 1.0, "entry": "2026-04-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "", "link": ""},
-    # 海外分散
-    "海外非美主动-摩根欧洲动力": {"keywords": ["摩根欧洲动力"],        "vol_coef": 1.0, "entry": "2026-04-20", "target_ratio": 4, "phase": "ACC", "amount_per_share": 0, "code": "", "link": ""},
-    "海外非美主动-摩根日本精选": {"keywords": ["摩根日本精选"],        "vol_coef": 1.0, "entry": "2026-04-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "", "link": ""},
+    # A股成长
+    "A股进攻层-兴全合润": {"keywords": ["兴全合润"],               "vol_coef": 99, "entry": "2026-04-22", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "", "link": ""},
+    "A股进攻层-富国天惠": {"keywords": ["富国天惠"],               "vol_coef": 99, "entry": "2026-04-22", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "", "link": ""},
+    # 美股成长"
+    "美股进攻层-纳指100": {"keywords": ["纳斯达克100"],            "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 6, "phase": "ACC", "amount_per_share": 0, "code": "016452", "link": ""},
+    "美股进攻层-标普500": {"keywords": ["标普500"],               "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "017641", "link": ""},
+    "美股进攻层-易方达全球优质": {"keywords": ["易方达全球优质"],    "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 200, "code": "018229", "link": "https://www.efunds.com.cn/fund/018229.shtml"},
+    "美股进攻层-易方达全球成长": {"keywords": ["易方达全球成长"],    "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 200, "code": "018229", "link": "https://www.efunds.com.cn/fund/012920.shtml"},
+    "美股进攻层-广发全球精选": {"keywords": ["广发全球精选"],        "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 2, "phase": "ACC", "amount_per_share": 200, "code": "270023", "link": "https://www.gffunds.com.cn/funds/?fundcode=270023&fromSearch=1"},
+    "美股进攻层-天弘全球高端制造": {"keywords": ["天弘全球高端制造"], "vol_coef": 1.0, "entry": "2026-04-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "", "link": ""},
+    "美股进攻层-华夏全球科技": {"keywords": ["华夏全球科技"],        "vol_coef": 1.0, "entry": "2026-04-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "", "link": ""},
+    "美股进攻层-国富全球科技": {"keywords": ["国富全球科技"],        "vol_coef": 1.0, "entry": "2026-04-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "", "link": ""},
+    # 缓冲层
+    "全球缓冲层-摩根全球多元": {"keywords": ["摩根全球多元"],          "vol_coef": 99, "entry": "2026-04-13", "target_ratio": 4, "phase": "ACC", "amount_per_share": 0, "code": "", "link": ""},
+    "全球缓冲层-摩根欧洲动力": {"keywords": ["摩根欧洲动力"],          "vol_coef": 99, "entry": "2026-04-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "", "link": ""},
+    "全球缓冲层-摩根日本精选": {"keywords": ["摩根日本精选"],          "vol_coef": 99, "entry": "2026-04-20", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "", "link": ""},
     # A股主动价值
-    "A股主动价值-大成高鑫": {"keywords": ["大成高鑫"],         "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "000628", "link": "https://www.dcfund.com.cn/main/fund/productdetail/index.shtml?product_code=000628"},
-    "A股主动价值-中欧红利": {"keywords": ["中欧红利"],         "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "004814", "link": "https://www.zofund.com/index2015/004814.shtml"},
-    "A股主动价值-招商匠心优选": {"keywords": ["招商匠心优选"],  "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "", "link": ""},
-    "A股主动价值-招商量化精选": {"keywords": ["招商量化精选"],  "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "", "link": ""},
-    "A股主动价值-中泰星元": {"keywords": ["中泰星元"],         "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "", "link": ""},
-    "A股主动价值-广发多因子": {"keywords": ["广发多因子"],      "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "", "link": ""},
+    "价值稳健层-大成高鑫": {"keywords": ["大成高鑫"],         "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "000628", "link": "https://www.dcfund.com.cn/main/fund/productdetail/index.shtml?product_code=000628"},
+    "价值稳健层-中欧红利": {"keywords": ["中欧红利"],         "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "004814", "link": "https://www.zofund.com/index2015/004814.shtml"},
+    "价值稳健层-招商匠心优选": {"keywords": ["招商匠心优选"],  "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "", "link": ""},
+    "价值稳健层-招商量化精选": {"keywords": ["招商量化精选"],  "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "", "link": ""},
+    "价值稳健层-中泰星元": {"keywords": ["中泰星元"],         "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "", "link": ""},
+    "价值稳健层-广发多因子": {"keywords": ["广发多因子"],      "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "", "link": ""},
+    "价值稳健层-鹏华盛世创新": {"keywords": ["鹏华盛世创新"],  "vol_coef": 99, "entry": "2026-04-15", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "", "link": ""},
     # A股被动价值
-    "A股被动价值-国证自由现金流": {"keywords": ["自由现金流"],  "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "023917", "link": ""},
-    "A股被动价值-国证价值100": {"keywords": ["价值100"],       "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "023917", "link": ""},
-    "A股被动价值-红利低波": {"keywords": ["红利低波"],         "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "020602", "link": ""},
+    "价值稳健层-国证自由现金流": {"keywords": ["自由现金流"],  "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "023917", "link": ""},
+    "价值稳健层-国证价值100": {"keywords": ["价值100"],       "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "023917", "link": ""},
+    "价值稳健层-红利低波": {"keywords": ["红利低波"],         "vol_coef": 0.8, "entry": "2026-04-13", "target_ratio": 2, "phase": "ACC", "amount_per_share": 100, "code": "020602", "link": ""},
     # A股二级债基增强
-    "二级债基-景颐招利": {"keywords": ["景颐招利"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 25, "phase": "ACC", "amount_per_share": 300, "code": "0100011", "link": "http://www.f5.igwfmc.com/main/jjcp/product/010011/detail.html"},
-    "二级债基-易方达瑞锦": {"keywords": ["易方达瑞锦"],     "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 12, "phase": "ACC", "amount_per_share": 300, "code": "009690", "link": "https://www.efunds.com.cn//fund/009690.shtml"},
-    "二级债基-招商安阳": {"keywords": ["招商安阳"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 6, "phase": "ACC", "amount_per_share": 300, "code": "010430", "link": "https://www.cmfchina.com/web/fundDetail/010430/index.html"},
+    "债基防御层-景颐招利": {"keywords": ["景颐招利"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 25, "phase": "ACC", "amount_per_share": 300, "code": "0100011", "link": "http://www.f5.igwfmc.com/main/jjcp/product/010011/detail.html"},
+    "债基防御层-易方达瑞锦": {"keywords": ["易方达瑞锦"],     "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 10, "phase": "ACC", "amount_per_share": 300, "code": "009690", "link": "https://www.efunds.com.cn//fund/009690.shtml"},
+    "债基防御层-招商安阳": {"keywords": ["招商安阳"],        "vol_coef": 99, "entry": "2026-03-13", "target_ratio": 5, "phase": "ACC", "amount_per_share": 300, "code": "010430", "link": "https://www.cmfchina.com/web/fundDetail/010430/index.html"},
     # A股短债增强
-    "现金增强-景颐裕利": {"keywords": ["景颐裕利"],           "vol_coef": 99, "entry": "2026-04-16", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "018736", "link": "http://www.f5.igwfmc.com/main/jjcp/product/018736/detail.html"},
-    "现金增强-华夏鼎泓": {"keywords": ["华夏鼎泓"],           "vol_coef": 99, "entry": "2026-04-16", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "007666", "link": "https://www.chinaamc.com/fund/007666/index.shtml"},
-    "现金短债": {"keywords": [],                         "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 5, "phase": "ACC", "amount_per_share": 0, "code": "", "link": ""},
+    "债基防御层-景颐裕利": {"keywords": ["景颐裕利"],           "vol_coef": 99, "entry": "2026-04-16", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "018736", "link": "http://www.f5.igwfmc.com/main/jjcp/product/018736/detail.html"},
+    "债基防御层-华夏鼎泓": {"keywords": ["华夏鼎泓"],           "vol_coef": 99, "entry": "2026-04-16", "target_ratio": 2, "phase": "ACC", "amount_per_share": 0, "code": "007666", "link": "https://www.chinaamc.com/fund/007666/index.shtml"},
+    "现金短债": {"keywords": [],                         "vol_coef": 99, "entry": "2026-03-20", "target_ratio": 4, "phase": "ACC", "amount_per_share": 0, "code": "", "link": ""},
     ########
     # 备选池
-    "A股成长主动-兴全合润": {"keywords": ["兴全合润"],    "vol_coef": 99, "entry": "2026-04-14", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 100, "code": "163406", "link": ""},
     "证券公司": {"keywords": ["证券公司"],        "vol_coef": 1.0, "entry": "2026-04-10", "target_ratio": 0, "phase": "FIX", "amount_per_share": 0, "code": "007993", "link": ""},
     "主要消费红利": {"keywords": ["消费红利"],    "vol_coef": 0.8, "entry": "2026-03-20", "target_ratio": 0, "phase": "FIX", "amount_per_share": 0, "code": "008929", "link": ""},   # 008929 低估
     "中证A500": {"keywords": ["A500"],           "vol_coef": 1.0, "entry": "2026-03-20", "target_ratio": 0, "phase": "WATCH", "amount_per_share": 0, "code": "", "link": ""},
@@ -410,8 +421,6 @@ def create_trade_records_charts():
         categories = sorted([c for c in df_filtered['category'].unique() if c != "其他" and c in valid_categories])
 
         for cat in categories:
-            if cat == "二级债基":
-                continue
             df_cat = df_filtered[df_filtered['category'] == cat]
             purchase_values = [
                 df_cat[(df_cat['交易日期_str'] == d) & (df_cat['交易类型合并'] == '申购')]['支出'].sum()
@@ -810,9 +819,9 @@ def fund_pos_change_stat():
             # 只列出 phase 为 ACC 的基金
             if category_config.get(cat_name, {}).get("phase") != "ACC":
                 continue
-            # 提取基础分类（如"二级债基"从"二级债基-景颐招利"）
+            # 提取基础分类（如"债基防御层"从"债基防御层-景颐招利"）
             base_cat = cat_name.split("-")[0] if "-" in cat_name else cat_name
-            funds_to_show = funds if base_cat == "二级债基" else funds[:1]
+            funds_to_show = funds if base_cat == "债基防御层" else funds[:1]
             for idx, fund in enumerate(funds_to_show):
                 try:
                     df = get_fund_data(fund["code"])
@@ -921,7 +930,7 @@ def fund_pos_change_stat():
                         ratio_dev = None
 
                     # 二级债基第一个基金直接填入amount_per_share
-                    is_bond_first = (vol_coef >= 99 and base_cat == "二级债基" and idx == 0)
+                    is_bond_first = (vol_coef >= 99 and base_cat == "债基防御层" and idx == 0)
 
                     table_data.append({"base_cat": base_cat, "full_cat": cat_name, "code": fund["code"], "name": fund["name"],
                                        "drawdown": drawdown, "peak_date": peak_date, "one_day_date": one_day_date,
@@ -1347,23 +1356,12 @@ def trade_records_detail():
                 if df_cat.empty:
                     continue
 
-                if cat == "二级债基":
-                    for code in sorted(df_cat['code'].unique()):
-                        name = code_to_name.get(code, "未知")
-                        name = name[:10] + "..." if len(name) > 10 else name
-                        row_values = [f"{name} ({code})"]
-                        for date in all_dates:
-                            df_fund_date = df_cat[(df_cat['code'] == code) & (df_cat['交易日期_str'] == date)]
-                            total = df_fund_date['支出'].sum() if trans_key == "申购" else df_fund_date['收入'].sum()
-                            row_values.append(f"{total:.0f}" if total > 0 else "-")
-                        result += "| " + " | ".join(row_values) + " |\n"
-                else:
-                    row_values = [cat]
-                    for date in all_dates:
-                        df_cat_date = df_cat[df_cat['交易日期_str'] == date]
-                        total = df_cat_date['支出'].sum() if trans_key == "申购" else df_cat_date['收入'].sum()
-                        row_values.append(f"{total:.0f}" if total > 0 else "-")
-                    result += "| " + " | ".join(row_values) + " |\n"
+                row_values = [cat]
+                for date in all_dates:
+                    df_cat_date = df_cat[df_cat['交易日期_str'] == date]
+                    total = df_cat_date['支出'].sum() if trans_key == "申购" else df_cat_date['收入'].sum()
+                    row_values.append(f"{total:.0f}" if total > 0 else "-")
+                result += "| " + " | ".join(row_values) + " |\n"
             result += "\n"
 
         return result if categories else "❌ 无有效申购记录"
